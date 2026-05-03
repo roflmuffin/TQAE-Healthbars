@@ -132,6 +132,36 @@ struct UniqueId {
     uint64_t id @ 0x0;
 }
 
+enum TeamMajor : uint32_t
+{
+    TeamMajor_Friendly = 0,
+    TeamMajor_Hostile  = 1,
+    TeamMajor_Human    = 2,
+    TeamMajor_Monster  = 3,
+};
+
+enum TeamMinor : uint32_t
+{
+    TeamMinor_Friendly = 0,
+
+    // value 1 is special/hostile-ish in IsFoe for major == 3
+    TeamMinor_Hostile  = 1,
+
+    TeamMinor_Red      = 2,
+    TeamMinor_Orange   = 3,
+    TeamMinor_Yellow   = 4,
+    TeamMinor_Green    = 5,
+    TeamMinor_Blue     = 6,
+    TeamMinor_Indigo   = 7,
+    TeamMinor_Violet   = 8,
+};
+
+struct Team {
+    TeamMajor major;
+    TeamMinor minor;
+    bool initialized;
+}
+
 struct Character : Entity {
     char* record @ 0x4 [[utf8*]];
     float currentLife @ 0x860;
@@ -143,6 +173,7 @@ struct Character : Entity {
     uint32_t attackerId @ 0x38c;
     uint32_t level @ 0xc5c;
     UniqueId* uniqueid @ 0x6c;
+    Team team @ 0xD44;
 }
 
 struct PlayerGameInterface {
