@@ -1,0 +1,257 @@
+type int 4 [[i32]]
+type int32_t 4 [[i32]]
+type size_t 4 [[i32]]
+type uint32_t 4 [[u32]]
+type uint64_t 8 [[u64]]
+type int64_t 8 [[i64]]
+type float 4 [[f32]]
+type void 0
+type char 1
+type bool 1 [[u8]]
+
+struct World {
+    bool debugEnabled @ 0x8;
+    char* fileName @ 0x10 [[utf8*]];
+}
+
+struct IntVec3 {
+    int x;
+    int y;
+    int z;
+}
+
+struct Vec2 {
+    float x;
+    float y;
+}
+
+struct Vec3 {
+    float x;
+    float y;
+    float z;
+}
+
+struct CharacterBio {
+     float currentLife @ 0x1c;
+     float maxLife @ 0x60;
+
+     float currentMana @ 0x30;
+     float maxMana @ 100;
+}
+
+struct Viewport {
+    int x;
+    int y;
+    int w;
+    int h;
+}
+
+struct ABBox {
+    float 	xmin
+    float 	xmax
+    float 	ymin
+    float 	ymax
+    float 	zmin
+    float 	zmax
+}
+
+struct Region {
+    World* world @ 0x24;
+    IntVec3 worldOffset @ 0x2c;
+    char* name @ 0x38 [[utf8*]];
+}
+
+struct WorldVec3 {
+    Region* region;
+    Vec3 position;
+}
+
+struct Coords {
+    Vec3 right;
+    Vec3 up;
+    Vec3 forward;
+}
+
+struct WorldCoords {
+    WorldVec3 location;
+}
+
+struct WorldFrustum {}
+
+
+
+ enum class LifeState : uint32_t {
+    Unknown = 0,
+    Initializing = 1,
+    Alive = 2,
+    Dying = 3,
+    Dead = 4,
+    Respawning = 5
+}
+
+struct PhysicsMesh {
+    ABBox boundingBox @ 0x1c;
+}
+
+struct Resource {
+    char* fileName @ 0xc [[utf8*]];
+    uint32_t lastFrameUsed @ 0x38;
+    //PhysicsMesh* physicsMesh @ 0xf8;
+}
+
+struct GraphicsMesh : Resource {
+    int meshId @ 0x8;
+    Vec3 centerOfMass @ 0xC8;
+    uint32_t numHitboxes @ 0xa0;
+    //ABBox* boundingBox @ 200;
+}
+
+struct SkeletalPose {
+    void* boneArrayPtr;
+    uint32_t padding_or_count;
+}
+
+
+struct GraphicsMeshInstance {
+    SkeletalPose* pose @ 0x128;
+    GraphicsMesh* graphicsMesh @ 0x4;
+    Vec3* scale @ 0x140;
+    //ABBox* regionSpaceABBox @ 0x1a0;
+    float somethingX @ 0x16c;
+    float somethingY @ 0x164;
+}
+
+struct Entity {
+    GraphicsMeshInstance* graphicsMeshInstance @ 0x184;
+    float height @ 0x1e4;
+    WorldCoords coords @ 0xa0;
+    int32_t lastFrameUpdated @ 0x140;
+}
+
+struct UniqueId {
+    uint64_t id @ 0x0;
+}
+
+struct Character : Entity {
+    char* record @ 0x4 [[utf8*]];
+    float currentLife @ 0x860;
+    float maxLife @ 0x8a4;
+    LifeState lifeState @ 0x1134
+    char* type @ 0xc20 [[utf8*]];
+    CharacterBio bio @ 0x844;
+    bool isInvisible @ 0xD50;
+    uint32_t attackerId @ 0x38c;
+    uint32_t level @ 0xc5c;
+    UniqueId* uniqueid @ 0x6c;
+}
+
+struct PlayerGameInterface {
+    void* vft;
+}
+
+struct Player : Character {
+    uint32_t currentLevel @ 0xc5c;
+    PlayerGameInterface* gameInterface @ 0x1f18;
+    uint32_t gold @ 0x40;
+}
+
+struct Npc : Character {
+
+}
+
+enum class MonsterClassification : uint32_t {
+   Normal = 0,
+   Champion = 1,
+   Hero = 2,
+   Boss = 3,
+   Quest = 4,
+}
+
+struct Monster : Character {
+    MonsterClassification classification @ 0x1FB8;
+    bool givesXp @ 0x2294;
+    uint32_t baseExperience @ 0xC60;
+}
+
+struct GameInfo {
+    char* name @ 0x10 [[utf8*]];
+    char* levelName @ 0x38 [[utf8*]];
+    uint32_t difficulty @ 0x124
+    int32_t elapsedGameTime @ 0x14c
+}
+
+struct Mat4 {
+    float m[4][4];
+}
+
+struct Camera {
+    void* vft;
+    Coords coords;
+    Vec3 position;
+    float nearPlane @ 0x40;
+    float farPlane @ 0x44;
+}
+
+struct SystemTimer {
+    int timer1;
+    int timer2;
+    int timer3;
+}
+
+struct WorldCamera {
+    float distanceDefault @ 0x4;
+    float pitchDefault @ 0x8;
+    float yaw @ 0x10;
+    float pitch @ 0x14;
+    float fov @ 0x18;
+    float nearPlane @ 0x20;
+    float distance @ 0xc;
+    float farPlane @ 0x1c;
+    Vec3 offset @ 0x64;
+
+    Camera camera @ 0x70;
+}
+
+struct GameCamera : WorldCamera {
+    Player* player @ 0x108;
+    WorldVec3 target @ 0x10c;
+}
+
+struct RenderDevice {}
+
+struct GraphicsCanvas {
+    RenderDevice* renderDevice @ 0x1c;
+}
+
+struct GraphicsEngine {
+    GraphicsCanvas* graphicsCanvas @ 0x58;
+    RenderDevice* renderDevice @ 0x34;
+    int width @ 0x38;
+    int height @ 0x3c;
+    bool enableBoundingBoxes @ 0xc5;
+}
+
+struct Engine {
+    void* vtable;
+    World* world @ 0x34; 
+    char* utilityFont @ 0x12c [[utf8*]];
+    int32_t elapsedSystemTime @ 0x48;
+    GraphicsEngine* graphicsEngine @ 0x160;
+    int updateTime @ 0x228;
+    uint32_t frameCount @ 0x3f0;
+    WorldFrustum worldFrustum @ 0x404;
+    float uiScale @ 0x940;
+}
+
+struct GameEngine {
+    void* vtable0;
+    void* vtable1;
+    char* record @ 0xb8 [[utf8*]];
+    GameInfo* gameInfo @ 0x298;
+    int32_t ui @ 0xfc8;
+    float meleeRange @ 0x950;
+    float meleeTargetDistance @ 0x980;
+    float maximumRange @ 0x960;
+    void* gameUiInterface @ 0xfc8;
+    bool renderingDisabled @ 0x28E8;
+}

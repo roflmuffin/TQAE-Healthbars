@@ -1,0 +1,1 @@
+target_sources(KieroHookTest PRIVATE kiero.cpp)

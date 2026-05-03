@@ -1,0 +1,28 @@
+# IDE
+.idea/
+
+# CMake build directories
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# Build outputs
+*.obj
+*.o
+*.pdb
+*.ilk
+*.lib
+*.exp
+*.dll
+*.exe
+
+# Visual Studio
+.vs/
+*.sln
+*.vcxproj*
+
+# Logs
+*.log
