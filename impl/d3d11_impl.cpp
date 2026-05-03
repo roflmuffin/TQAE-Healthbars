@@ -1,4 +1,4 @@
-﻿#include "../vendor/kiero/kiero.h"
+#include "../vendor/kiero/kiero.h"
 
 #if KIERO_INCLUDE_D3D11
 
@@ -15,17 +15,51 @@
 #include "../sdk/GameCamera.hpp"
 #include "../sdk/Character.hpp"
 #include "../sdk/GraphicsEngine.hpp"
-#include <safetyhook.hpp>
+#include <MinHook.h>
 #include "mem.hpp"
 
-typedef long (__stdcall*Present)(IDXGISwapChain *, UINT, UINT);
+typedef long (__stdcall *Present)(IDXGISwapChain *, UINT, UINT);
+static Present oPresent = nullptr;
 
-static Present oPresent = NULL;
+using GetViewport_t = const Viewport& (__thiscall*)(void* thisptr);
+
+static GetViewport_t oGetViewport = nullptr;
+
+const Viewport& __fastcall hkGetViewport(void* thisptr, void* edx) 
+{
+    auto& result = oGetViewport(thisptr);
+
+    auto* viewport = reinterpret_cast<Viewport*>(
+        reinterpret_cast<uintptr_t>(thisptr) + 0x88c
+        );
+
+    if (viewport->w > 0 && viewport->h > 0) {
+        impl::state::g_pViewport.w = viewport->w;
+        impl::state::g_pViewport.h = viewport->h;
+    }
+
+    return result;
+}
+
+typedef LifeState (__fastcall *GetLifeStateFn)(Character* this_, void* edx);
+static GetLifeStateFn oGetLifeState = nullptr;
+
+static LifeState __fastcall hkGetLifeState(Character* this_, void* edx) {
+    LifeState result = oGetLifeState(this_, edx);
+    if (this_) {
+        if (this_->bio.currentLife < 0) {
+            impl::state::allCharacters.erase(this_);
+        } else if (this_->bio.currentLife > 0) {
+            impl::state::allCharacters.insert(this_);
+        }
+    }
+    return result;
+}
 
 static int frameCount = 0;
+static bool init = false;
 
 long __stdcall hkPresent11(IDXGISwapChain *pSwapChain, UINT SyncInterval, UINT Flags) {
-    static bool init = false;
 
     if (!init) {
         DXGI_SWAP_CHAIN_DESC desc;
@@ -53,35 +87,24 @@ long __stdcall hkPresent11(IDXGISwapChain *pSwapChain, UINT SyncInterval, UINT F
         impl::state::fnWorldCameraProject = reinterpret_cast<impl::state::ProjectFunc>(mem::modexport<"Engine.dll",
             "?Project@WorldCamera@GAME@@QBE?AVVec2@2@ABVWorldVec3@2@ABVViewport@2@@Z">());
 
-        static SafetyHookMid getViewportHook = safetyhook::create_mid(
-            reinterpret_cast<void *>(mem::modexport<"Engine.dll",
-                "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">()),
-            [](SafetyHookContext &ctx) {
-                auto viewport = (Viewport *) (ctx.ecx + 0x88c);
+        auto viewportTarget = reinterpret_cast<void*>(mem::modexport<"Engine.dll",
+            "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">());
+        if (viewportTarget &&
+            MH_CreateHook(viewportTarget, &hkGetViewport,
+                reinterpret_cast<void**>(&oGetViewport)) == MH_OK) {
+            MH_EnableHook(viewportTarget);
+        }
 
-                if (viewport->w > 0 && viewport->h > 0) {
-                    impl::state::g_pViewport.w = viewport->w;
-                    impl::state::g_pViewport.h = viewport->h;
-                }
-            });
-
-        static SafetyHookMid getLifeStateHook = safetyhook::create_mid(
-            reinterpret_cast<void *>(mem::modexport<"Game.dll",
-                "?GetLifeState@Character@GAME@@UBE?BW4Character_LifeState@2@XZ">()),
-            [](SafetyHookContext &ctx) {
-                auto *thisPtr = reinterpret_cast<Character *>(ctx.ecx);
-                if (thisPtr->bio.currentLife < 0) {
-                    if (impl::state::allCharacters.contains(thisPtr)) {
-                        impl::state::allCharacters.erase(thisPtr);
-                    }
-                } else if (!impl::state::allCharacters.contains(thisPtr) && thisPtr->bio.currentLife > 0) {
-                    impl::state::allCharacters.insert(thisPtr);
-                }
-            });
+        auto lifeStateTarget = reinterpret_cast<void*>(mem::modexport<"Game.dll",
+            "?GetLifeState@Character@GAME@@UBE?BW4Character_LifeState@2@XZ">());
+        if (lifeStateTarget &&
+            MH_CreateHook(lifeStateTarget, &hkGetLifeState,
+                reinterpret_cast<void**>(&oGetLifeState)) == MH_OK) {
+            MH_EnableHook(lifeStateTarget);
+        }
 
         init = true;
     }
-
 
     frameCount++;
 
@@ -103,7 +126,8 @@ long __stdcall hkPresent11(IDXGISwapChain *pSwapChain, UINT SyncInterval, UINT F
 }
 
 void impl::d3d11::init() {
-    assert(kiero::bind(8, (void**)&oPresent, hkPresent11) == kiero::Status::Success);
+    auto status = kiero::bind(8, (void**)&oPresent, hkPresent11);
+    assert(status == kiero::Status::Success);
 }
 
 #endif // KIERO_INCLUDE_D3D11

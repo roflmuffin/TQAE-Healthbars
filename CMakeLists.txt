@@ -19,3 +19,9 @@ add_library(KieroHookTest SHARED main.cpp impl/d3d11_impl.cpp impl/shared.cpp im
 add_subdirectory(vendor)
 
 target_link_libraries(KieroHookTest PRIVATE minhook safetyhook)
+
+# DLL Injector (standalone executable, no dependencies beyond Win32)
+add_executable(TQInjector injector/injector.cpp)
+set_target_properties(TQInjector PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+)

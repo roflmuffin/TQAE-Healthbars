@@ -92,7 +92,7 @@ void impl::showExampleWindow(const char *comment) {
         ImGui::Text("Engine Pointer: %p", impl::state::g_pEngine);
         ImGui::Text("Game Engine Pointer: %p", impl::state::g_pGameEngine);
         ImGui::Text("Camera Pointer: %p", impl::state::g_pGameCamera);
-        ImGui::Text("Viewport: %.0f x %.0f", impl::state::g_pViewport.w, impl::state::g_pViewport.h);
+        ImGui::Text("Viewport: %i x %i", impl::state::g_pViewport.w, impl::state::g_pViewport.h);
 
         if (impl::state::g_pGameCamera && impl::state::g_pGameCamera->player) {
             ImGui::Text("Player Pointer: %p", impl::state::g_pGameCamera->player);
@@ -107,8 +107,6 @@ void impl::showExampleWindow(const char *comment) {
         ImGui::SliderInt("Opacity", &opacity, 0, 255);
     }
     ImGui::End();
-
-    ImGui::GetForegroundDrawList()->AddText(ImVec2(20, 250), IM_COL32(255, 255, 0, 255), "KieroHookTest injected");
 
     if (!impl::state::g_pGameCamera || !impl::state::g_pGameCamera->player || !impl::state::fnWorldCameraProject) {
         return;
