@@ -164,6 +164,17 @@ struct Team {
     bool initialized;
 }
 
+struct CombatManager {
+    uint32_t attackerId @ 0xc4;
+    int32_t lastAttackTime @ 0xc0;
+    uint32_t combatState @ 0xb4;
+    int32_t combatIdleTime @ 0xbc;
+}
+
+struct Inventory {
+    void* vft;
+}
+
 struct Character : Entity {
     char* record @ 0x4 [[utf8*]];
     float currentLife @ 0x860;
@@ -177,6 +188,15 @@ struct Character : Entity {
     uint32_t money @ 0xc14;
     UniqueId* uniqueid @ 0x6c;
     Team team @ 0xD44;
+
+    CombatManager combatManager @ 0x2c8;
+    Inventory inventory @ 0x7a0;
+
+    uint32_t experience @ 0xc60;
+    uint32_t modifierPoints @ 0xc64;
+    uint32_t skillPoints @ 0xc68;
+
+    bool showAngerLevels @ 0x1201;
 }
 
 struct PlayerGameInterface {
@@ -192,6 +212,7 @@ struct Player : Character {
 struct Npc : Character {
 
 }
+
 
 enum class MonsterClassification : uint32_t {
    Normal = 0,
@@ -275,6 +296,9 @@ struct Engine {
     uint32_t frameCount @ 0x3f0;
     WorldFrustum worldFrustum @ 0x404;
     float uiScale @ 0x940;
+
+    bool characterCommandLogEnabled @ 0x1b8;
+    bool characterDataLogEnabled @ 0x1b9;
 }
 
 struct GameEngine {
@@ -288,5 +312,7 @@ struct GameEngine {
     float maximumRange @ 0x960;
     void* gameUiInterface @ 0xfc8;
     bool renderingDisabled @ 0x28E8;
+    bool debugRendering @ 0x2a8f;
+    bool debugRendering2 @ 0x2a8e;
 }
 }
