@@ -9,6 +9,8 @@ type void 0
 type char 1
 type bool 1 [[u8]]
 
+namespace GAME {
+
 struct World {
     bool debugEnabled @ 0x8;
     char* fileName @ 0x10 [[utf8*]];
@@ -286,4 +288,5 @@ struct GameEngine {
     float maximumRange @ 0x960;
     void* gameUiInterface @ 0xfc8;
     bool renderingDisabled @ 0x28E8;
+}
 }
