@@ -1,4 +1,6 @@
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\LifeState.hpp" \
+"C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\TeamMajor.hpp" \
+"C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\TeamMinor.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\MonsterClassification.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\World.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\IntVec3.hpp" \
@@ -18,7 +20,10 @@
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\SkeletalPose.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\GraphicsMeshInstance.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Entity.hpp" \
+"C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\UniqueId.hpp" \
+"C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Team.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Character.hpp" \
+"C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\PlayerGameInterface.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Player.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Npc.hpp" \
 "C:\Users\MICHAEL\source\throwaway-repos\KieroHookTest\sdk\Monster.hpp" \

@@ -1,6 +1,9 @@
 #pragma once
 #include "Character.hpp"
+struct PlayerGameInterface;
 #pragma pack(push, 1)
 struct Player : public Character {
-}; // Size: 0x1138
+    private: char pad_1138[0xde0]; public:
+    PlayerGameInterface* gameInterface; // 0x1f18
+}; // Size: 0x1f1c
 #pragma pack(pop)

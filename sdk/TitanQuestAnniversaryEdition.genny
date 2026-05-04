@@ -172,6 +172,7 @@ struct Character : Entity {
     bool isInvisible @ 0xD50;
     uint32_t attackerId @ 0x38c;
     uint32_t level @ 0xc5c;
+    uint32_t money @ 0xc14;
     UniqueId* uniqueid @ 0x6c;
     Team team @ 0xD44;
 }

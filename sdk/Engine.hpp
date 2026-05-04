@@ -18,6 +18,7 @@ struct Engine {
     int updateTime; // 0x228
     private: char pad_22c[0x1c4]; public:
     uint32_t frameCount; // 0x3f0
-    private: char pad_3f4[0x10]; public:
-}; // Size: 0x404
+    private: char pad_3f4[0x54c]; public:
+    float uiScale; // 0x940
+}; // Size: 0x944
 #pragma pack(pop)
