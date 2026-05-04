@@ -178,6 +178,12 @@ void impl::showExampleWindow(const char* comment)
             continue;
         }
 
+        if (character->team.major == GAME::TeamMajor_Friendly ||
+            (character->team.major == GAME::TeamMajor_Human && character->team.minor == GAME::TeamMinor_Friendly))
+        {
+            continue;
+        }
+
         if (character->coords.location.region == nullptr) continue;
         if (character->graphicsMeshInstance == nullptr) continue;
 
