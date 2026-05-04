@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <set>
 
+#include "../vendor/imgui/imgui.h"
 #include "../sdk/GAME/Engine.hpp"
 #include "../sdk/GAME/Entity.hpp"
 #include "../sdk/GAME/GameCamera.hpp"
@@ -37,5 +38,7 @@ using GetObjectManager = void* (*)();
 
 inline ProjectFunc fnWorldCameraProject = nullptr;
 inline GetObjectManager fnGetObjectManager = nullptr;
+
+inline ImFont* villageFont;
 } // namespace state
 } // namespace impl

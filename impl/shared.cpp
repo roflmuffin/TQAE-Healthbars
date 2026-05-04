@@ -160,6 +160,7 @@ void impl::showExampleWindow(const char* comment)
         return;
     }
 
+    ImGui::PushFont(impl::state::villageFont);
     for (auto* character : impl::state::allCharacters)
     {
         if (!character)
@@ -198,4 +199,5 @@ void impl::showExampleWindow(const char* comment)
 
         RenderHealthBar(character, ImVec2(screenPos.x, screenPos.y), ImVec2(75, 6));
     }
+    ImGui::PopFont();
 }

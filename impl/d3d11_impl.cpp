@@ -123,10 +123,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
-        if (ImFont* villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f))
-        {
-            io.FontDefault = villageFont;
-        }
+        io.Fonts->AddFontDefault();
+        impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
 
         ImGui_ImplWin32_Init(desc.OutputWindow);
         ImGui_ImplDX11_Init(device, context);
