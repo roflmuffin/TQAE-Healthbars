@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <set>
 
 #include "../sdk/GAME/Engine.hpp"
@@ -22,14 +23,19 @@ void init();
 }
 
 namespace state {
+inline uintptr_t gameBase = 0;
+inline uintptr_t engineBase = 0;
+
 inline Engine* g_pEngine;
 inline Engine* g_pGameEngine;
 inline GameCamera* g_pGameCamera;
 inline Viewport g_pViewport{};
 inline std::set<Character*> allCharacters{};
 
-typedef void(__thiscall* ProjectFunc)(WorldCamera* pThis, Vec2* result, WorldVec3* worldPos, Viewport* viewport);
+using ProjectFunc = void(__thiscall*)(WorldCamera* pThis, Vec2* result, WorldVec3* worldPos, Viewport* viewport);
+using GetObjectManager = void* (*)();
 
 inline ProjectFunc fnWorldCameraProject = nullptr;
+inline GetObjectManager fnGetObjectManager = nullptr;
 } // namespace state
 } // namespace impl

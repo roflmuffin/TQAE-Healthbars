@@ -18,6 +18,27 @@ static int opacity = 255;
 
 using namespace GAME;
 
+static void RenderPointerRow(const char* name, const void* pointer)
+{
+    char pointerText[32];
+    snprintf(pointerText, sizeof(pointerText), "%p", pointer);
+
+    ImGui::TableNextRow();
+
+    ImGui::TableSetColumnIndex(0);
+    ImGui::TextUnformatted(name);
+
+    ImGui::TableSetColumnIndex(1);
+    ImGui::TextUnformatted(pointerText);
+
+    ImGui::TableSetColumnIndex(2);
+    std::string buttonLabel = std::string("Copy##") + name;
+    if (ImGui::SmallButton(buttonLabel.c_str()))
+    {
+        ImGui::SetClipboardText(pointerText);
+    }
+}
+
 void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 {
     float health = character->bio.currentLife;
@@ -90,27 +111,39 @@ static bool showFullHealthEnemies = true;
 
 void impl::showExampleWindow(const char* comment)
 {
-    ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(420, 220), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_::ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
 
     if (ImGui::Begin("KieroHookTest"))
     {
         ImGui::Text("Renderer: %s", comment);
-        ImGui::Text("Engine Pointer: %p", impl::state::g_pEngine);
-        ImGui::Text("Game Engine Pointer: %p", impl::state::g_pGameEngine);
-        ImGui::Text("Camera Pointer: %p", impl::state::g_pGameCamera);
+
+        if (ImGui::BeginTable("Pointers", 3, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+        {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.40f);
+            ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthStretch, 0.45f);
+            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.15f);
+            ImGui::TableHeadersRow();
+
+            RenderPointerRow("Engine Base", reinterpret_cast<const void*>(impl::state::engineBase));
+            RenderPointerRow("Game Base", reinterpret_cast<const void*>(impl::state::gameBase));
+            RenderPointerRow("Engine Pointer", impl::state::g_pEngine);
+            RenderPointerRow("Game Engine Pointer", impl::state::g_pGameEngine);
+            RenderPointerRow("Camera Pointer", impl::state::g_pGameCamera);
+            RenderPointerRow("Object Manager Pointer", impl::state::fnGetObjectManager ? impl::state::fnGetObjectManager() : nullptr);
+
+            auto* player = impl::state::g_pGameCamera ? impl::state::g_pGameCamera->player : nullptr;
+            RenderPointerRow("Player Pointer", player);
+
+            ImGui::EndTable();
+
+            if (player)
+            {
+                ImGui::Checkbox("Player Invisible", &player->isInvisible);
+            }
+        }
+
         ImGui::Text("Viewport: %i x %i", impl::state::g_pViewport.w, impl::state::g_pViewport.h);
-
-        if (impl::state::g_pGameCamera && impl::state::g_pGameCamera->player)
-        {
-            ImGui::Text("Player Pointer: %p", impl::state::g_pGameCamera->player);
-            ImGui::Checkbox("Player Invisible", &impl::state::g_pGameCamera->player->isInvisible);
-        }
-        else
-        {
-            ImGui::Text("Player Pointer: <null>");
-        }
-
         ImGui::Separator();
         ImGui::Text("Characters: %zu", impl::state::allCharacters.size());
         ImGui::Checkbox("Show Full Health Enemies", &showFullHealthEnemies);

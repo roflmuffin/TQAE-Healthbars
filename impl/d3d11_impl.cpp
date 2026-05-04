@@ -17,6 +17,8 @@
 #include "../vendor/imgui/imgui_impl_win32.h"
 #include "mem.hpp"
 #include <MinHook.h>
+#include <string>
+#include <vector>
 
 typedef long(__stdcall* Present)(IDXGISwapChain*, UINT, UINT);
 static Present oPresent = nullptr;
@@ -63,8 +65,46 @@ static LifeState __fastcall hkGetLifeState(Character* this_, void* edx)
 static int frameCount = 0;
 static bool init = false;
 
+static void UpdateImGuiMouseForBackBuffer(HWND hwnd, IDXGISwapChain* swapChain)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    ID3D11Texture2D* backBuffer = nullptr;
+    if (FAILED(swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))) || backBuffer == nullptr) return;
+
+    D3D11_TEXTURE2D_DESC bbDesc{};
+    backBuffer->GetDesc(&bbDesc);
+    backBuffer->Release();
+
+    RECT clientRect{};
+    if (!GetClientRect(hwnd, &clientRect)) return;
+
+    const float clientW = static_cast<float>(clientRect.right - clientRect.left);
+    const float clientH = static_cast<float>(clientRect.bottom - clientRect.top);
+
+    const float bufferW = static_cast<float>(bbDesc.Width);
+    const float bufferH = static_cast<float>(bbDesc.Height);
+
+    if (clientW <= 0.0f || clientH <= 0.0f || bufferW <= 0.0f || bufferH <= 0.0f) return;
+
+    POINT cursor{};
+    if (!GetCursorPos(&cursor)) return;
+
+    if (!ScreenToClient(hwnd, &cursor)) return;
+
+    const float scaleX = bufferW / clientW;
+    const float scaleY = bufferH / clientH;
+
+    const float mouseX = static_cast<float>(cursor.x) * scaleX;
+    const float mouseY = static_cast<float>(cursor.y) * scaleY;
+
+    io.DisplaySize = ImVec2(bufferW, bufferH);
+    io.AddMousePosEvent(mouseX, mouseY);
+}
+
 long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags)
 {
+    static HWND hwnd = nullptr;
     if (!init)
     {
         DXGI_SWAP_CHAIN_DESC desc;
@@ -77,13 +117,29 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         device->GetImmediateContext(&context);
 
         impl::win32::init(desc.OutputWindow);
+        hwnd = desc.OutputWindow;
 
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
+        if (ImFont* villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f))
+        {
+            io.FontDefault = villageFont;
+        }
+
         ImGui_ImplWin32_Init(desc.OutputWindow);
         ImGui_ImplDX11_Init(device, context);
+        ImGui_ImplWin32_EnableDpiAwareness();
+        ImGuiStyle& style = ImGui::GetStyle();
+
+        auto scaleFactor = desc.BufferDesc.Height / 1080.0f;
+
+        style.FontScaleDpi = scaleFactor;
+        style.ScaleAllSizes(scaleFactor);
+
+        impl::state::engineBase = mem::rva<"Engine.dll">(0);
+        impl::state::gameBase = mem::rva<"Game.dll">(0);
 
         impl::state::g_pEngine = mem::modexportptr<Engine*, "Engine.dll", "?gEngine@GAME@@3PAVEngine@1@A">();
         impl::state::g_pGameEngine = mem::modexportptr<Engine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
@@ -92,6 +148,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         impl::state::fnWorldCameraProject =
             reinterpret_cast<impl::state::ProjectFunc>(mem::modexport<"Engine.dll", "?Project@WorldCamera@GAME@@QBE?AVVec2@2@"
                                                                                     "ABVWorldVec3@2@ABVViewport@2@@Z">());
+
+        impl::state::fnGetObjectManager = reinterpret_cast<impl::state::GetObjectManager>(
+            mem::modexport<"Engine.dll", "?Get@?$Singleton@VDebugRenderManager@GAME@@@GAME@@SAPAVDebugRenderManager@2@XZ">());
 
         auto viewportTarget =
             reinterpret_cast<void*>(mem::modexport<"Engine.dll", "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">());
@@ -114,6 +173,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();
+
+    UpdateImGuiMouseForBackBuffer(hwnd, pSwapChain);
     ImGui::NewFrame();
 
     impl::showExampleWindow("D3D11");
