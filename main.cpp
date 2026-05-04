@@ -1,8 +1,7 @@
 ﻿#include "vendor/kiero/kiero.h"
 
 #ifdef _WIN64
-#error                                                                         \
-    "This DLL must be compiled as 32-bit (x86) to inject into TQ.exe (32-bit)"
+#error "This DLL must be compiled as 32-bit (x86) to inject into TQ.exe (32-bit)"
 #endif
 
 #if KIERO_INCLUDE_D3D11
@@ -20,54 +19,60 @@
 
 std::ofstream g_logFile;
 
-void Log(const std::string &message) {
-  if (g_logFile.is_open()) {
-    g_logFile << message << std::endl;
-    g_logFile.flush();
-  }
+void Log(const std::string& message)
+{
+    if (g_logFile.is_open())
+    {
+        g_logFile << message << std::endl;
+        g_logFile.flush();
+    }
 }
 
-int kieroExampleThread() {
-  // Open log file in the game directory
-  char logPath[MAX_PATH];
-  GetModuleFileNameA(NULL, logPath, MAX_PATH);
-  std::string logPathStr(logPath);
-  size_t pos = logPathStr.find_last_of("\\/");
-  if (pos != std::string::npos) {
-    logPathStr = logPathStr.substr(0, pos + 1);
-  }
-  logPathStr += "Kiero.log";
+int kieroExampleThread()
+{
+    // Open log file in the game directory
+    char logPath[MAX_PATH];
+    GetModuleFileNameA(NULL, logPath, MAX_PATH);
+    std::string logPathStr(logPath);
+    size_t pos = logPathStr.find_last_of("\\/");
+    if (pos != std::string::npos)
+    {
+        logPathStr = logPathStr.substr(0, pos + 1);
+    }
+    logPathStr += "Kiero.log";
 
-  g_logFile.open(logPathStr, std::ios::out | std::ios::trunc);
+    g_logFile.open(logPathStr, std::ios::out | std::ios::trunc);
 
-  // We're loaded as a dinput8.dll proxy, which happens before the game has
-  // initialised its renderer. Wait for the game to load d3d11.dll so kiero's
-  // temp device + swapchain creation lands on a real d3d11 runtime.
-  while (GetModuleHandleW(L"d3d11.dll") == nullptr) {
-    Sleep(50);
-  }
+    // We're loaded as a dinput8.dll proxy, which happens before the game has
+    // initialised its renderer. Wait for the game to load d3d11.dll so kiero's
+    // temp device + swapchain creation lands on a real d3d11 runtime.
+    while (GetModuleHandleW(L"d3d11.dll") == nullptr)
+    {
+        Sleep(50);
+    }
 
-  if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success) {
-    Log("Success");
-    impl::d3d11::init();
+    if (kiero::init(kiero::RenderType::D3D11) == kiero::Status::Success)
+    {
+        Log("Success");
+        impl::d3d11::init();
 
-    return 1;
-  }
+        return 1;
+    }
 
-  Log("Failure");
+    Log("Failure");
 
-  return 0;
+    return 0;
 }
 
-BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID) {
+BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID)
+{
+    switch (fdwReason)
+    {
+        case DLL_PROCESS_ATTACH:
+            DisableThreadLibraryCalls(hInstance);
+            CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)kieroExampleThread, NULL, 0, NULL);
+            break;
+    }
 
-  switch (fdwReason) {
-  case DLL_PROCESS_ATTACH:
-    DisableThreadLibraryCalls(hInstance);
-    CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)kieroExampleThread, NULL, 0,
-                 NULL);
-    break;
-  }
-
-  return TRUE;
+    return TRUE;
 }

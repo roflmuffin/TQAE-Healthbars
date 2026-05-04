@@ -27,3 +27,6 @@ Makefile
 
 # Logs
 *.log
+
+# Regenny
+file_list.txt
