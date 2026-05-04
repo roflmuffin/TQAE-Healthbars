@@ -67,6 +67,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     }
 
     ImDrawList* draw = ImGui::GetForegroundDrawList();
+    const ImVec2 shadowOffset(2.0f, 2.0f);
 
     // Calculate health percentage
     float healthPct = health / maxHealth;
@@ -96,15 +97,18 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
     ImVec2 textSize = ImGui::CalcTextSize(text);
 
-    draw->AddText(ImVec2(pos.x - (textSize.x * 0.5f), pos.y - 22 + ((size.y - textSize.y) * 0.5f)), IM_COL32(255, 255, 255, opacity), text);
+    ImVec2 textPos(pos.x - (textSize.x * 0.5f), pos.y - 22 + ((size.y - textSize.y) * 0.5f));
+    draw->AddText(ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text);
+    draw->AddText(textPos, IM_COL32(255, 255, 255, opacity), text);
 
     char text2[64];
     snprintf(text2, sizeof(text2), "%p", character);
 
     ImVec2 textSize2 = ImGui::CalcTextSize(text2);
 
-    draw->AddText(ImVec2(pos.x - (textSize2.x * 0.5f), pos.y - 22 - 20 + ((size.y - textSize2.y) * 0.5f)), IM_COL32(255, 255, 255, opacity),
-                  text2);
+    ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - 22 - 20 + ((size.y - textSize2.y) * 0.5f));
+    draw->AddText(ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text2);
+    draw->AddText(textPos2, IM_COL32(255, 255, 255, opacity), text2);
 }
 
 static bool showFullHealthEnemies = true;
@@ -183,18 +187,6 @@ void impl::showExampleWindow(const char* comment)
                                      .y = character->coords.location.position.y +
                                           ((character->graphicsMeshInstance->somethingY + character->height)),
                                      .z = character->coords.location.position.z - (character->graphicsMeshInstance->somethingX / 2) } };
-
-        // WorldVec3 centreOfMassCoords = {
-        //     .region = character->coords.location.region,
-        //     .position = {
-        //         .x = character->coords.location.position.x +
-        //         character->graphicsMeshInstance->graphicsMesh->centerOfMass.x, .y
-        //         = character->coords.location.position.y +
-        //         character->graphicsMeshInstance->graphicsMesh->centerOfMass.y +
-        //         (character->height), .z = character->coords.location.position.z +
-        //         character->graphicsMeshInstance->graphicsMesh->centerOfMass.z
-        //     }
-        // };
 
         Vec2 screenPos{};
         impl::state::fnWorldCameraProject(impl::state::g_pGameCamera, &screenPos, &headCoords, &impl::state::g_pViewport);
