@@ -27,6 +27,7 @@ void init();
 namespace state {
 inline uintptr_t gameBase = 0;
 inline uintptr_t engineBase = 0;
+inline float globalScaleFactor = 1.0f;
 
 inline Engine* g_pEngine;
 inline Engine* g_pGameEngine;

@@ -1,6 +1,7 @@
 type int 4 [[i32]]
 type int32_t 4 [[i32]]
 type size_t 4 [[i32]]
+type uint8_t 1 [[u8]]
 type uint32_t 4 [[u32]]
 type uint64_t 8 [[u64]]
 type int64_t 8 [[i64]]
@@ -106,6 +107,9 @@ struct GraphicsMesh : Resource {
     Vec3 centerOfMass @ 0xC8;
     uint32_t numHitboxes @ 0xa0;
     //ABBox* boundingBox @ 200;
+    uint32_t numFaces @ 0x74;
+    uint32_t numVertices @ 0x6c;
+    uint32_t numBones @ 0xa8;
 }
 
 struct SkeletalPose {
@@ -113,6 +117,12 @@ struct SkeletalPose {
     uint32_t padding_or_count;
 }
 
+struct Color {
+    float r;
+    float g;
+    float b;
+    float a;
+}
 
 struct GraphicsMeshInstance {
     SkeletalPose* pose @ 0x128;
@@ -121,6 +131,13 @@ struct GraphicsMeshInstance {
     //ABBox* regionSpaceABBox @ 0x1a0;
     float somethingX @ 0x16c;
     float somethingY @ 0x164;
+
+    bool isDissolvingOne @ 0x228;
+    bool isDissolvingTwo @ 0x250;
+
+    Color diffuseColor @ 0x1c8;
+    float highlight @ 0x1d8;
+    Color color @ 0x1dc;
 }
 
 struct Object {
@@ -140,6 +157,9 @@ struct Entity : Object {
     float height @ 0x1e4;
     WorldCoords coords @ 0xa0;
     int32_t lastFrameUpdated @ 0x140;
+    Color tintColor @ 0x274;
+    Color highlightColor @ 0x284;
+    bool highlightEnabled @ 0x294;
 }
 
 struct UniqueId {

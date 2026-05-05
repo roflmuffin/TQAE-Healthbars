@@ -137,6 +137,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         style.FontScaleDpi = scaleFactor;
         style.ScaleAllSizes(scaleFactor);
 
+        impl::state::globalScaleFactor = scaleFactor;
+
         impl::state::engineBase = mem::rva<"Engine.dll">(0);
         impl::state::gameBase = mem::rva<"Game.dll">(0);
 
