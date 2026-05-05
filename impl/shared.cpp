@@ -35,6 +35,14 @@ struct HealthBarAnimState
 
 std::unordered_map<Character*, HealthBarAnimState> g_healthBarStates;
 
+std::unordered_map<MonsterClassification, ImColor> g_monsterClassificationColors = {
+    { MonsterClassification::Normal, ImColor(255, 255, 255, 255) },
+    { MonsterClassification::Champion, ImColor(252, 252, 47, 255) },
+    { MonsterClassification::Hero, ImColor(252, 177, 82, 255) },
+    { MonsterClassification::Boss, ImColor(252, 71, 0, 255) },
+    { MonsterClassification::Quest, ImColor(204, 160, 215, 255) }
+};
+
 } // namespace
 
 static void RenderPointerRow(const char* name, const void* pointer)
@@ -132,7 +140,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     }
 
     ImDrawList* draw = ImGui::GetForegroundDrawList();
-    const ImVec2 shadowOffset(2.0f * scaleFactor, 2.0f * scaleFactor);
+    const ImVec2 shadowOffset(1.0f * scaleFactor, 1.0f * scaleFactor);
     ImFont* font = ImGui::GetFont();
     const float fontSize = font ? (font->LegacySize * scaleFactor) : (ImGui::GetFontSize() * scaleFactor);
 
@@ -225,25 +233,43 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
     if (g_healthBarConfig.showHealthAmountTextForMonsters || g_healthBarConfig.showHealthAmountTextForPlayers)
     {
-        if (isPlayer && !g_healthBarConfig.showHealthAmountTextForPlayers)
+        if ((isPlayer && g_healthBarConfig.showHealthAmountTextForPlayers) ||
+            (isMonster && g_healthBarConfig.showHealthAmountTextForMonsters))
         {
-            return;
-        }
+            // Optional: Health text
+            char text[64];
+            snprintf(text, sizeof(text), "%d / %d", (int)std::ceil(health), (int)std::ceil(maxHealth));
 
-        if (isMonster && !g_healthBarConfig.showHealthAmountTextForMonsters)
+            ImVec2 textSize = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
+
+            ImVec2 textPos(pos.x - (textSize.x * 0.5f), pos.y - (16.0f * scaleFactor) + ((size.y - textSize.y) * 0.5f));
+            draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text);
+            draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, opacity), text);
+        }
+    }
+
+    if (isMonster)
+    {
+        auto* monster = reinterpret_cast<Monster*>(character);
+        if (static_cast<uint32_t>(monster->classification) > 0)
         {
-            return;
+            std::wstring description;
+            const char* descriptionTag = character->descriptionTag.c_str();
+            if (descriptionTag && *descriptionTag)
+            {
+                description = std::wstring(impl::state::fnLocalizationGetText(impl::state::g_pLocalizationManager, descriptionTag));
+            }
+            char text2[255];
+            snprintf(text2, sizeof(text2), "%ls", description.c_str());
+
+            ImVec2 textSize2 = font ? font->CalcTextSizeA(24, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
+
+            ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (40.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
+            draw->AddText(font, 24, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text2);
+
+            g_monsterClassificationColors[monster->classification].Value.w = opacity / 255.0f;
+            draw->AddText(font, 24, textPos2, g_monsterClassificationColors[monster->classification], text2);
         }
-
-        // Optional: Health text
-        char text[64];
-        snprintf(text, sizeof(text), "%d / %d", (int)std::ceil(health), (int)std::ceil(maxHealth));
-
-        ImVec2 textSize = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
-
-        ImVec2 textPos(pos.x - (textSize.x * 0.5f), pos.y - (22.0f * scaleFactor) + ((size.y - textSize.y) * 0.5f));
-        draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text);
-        draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, opacity), text);
     }
 
     if (g_healthBarConfig.showDebugText)
@@ -259,7 +285,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
         ImVec2 textSize2 = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
-        ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (42.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
+        ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (66.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
         draw->AddText(font, fontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text2);
         draw->AddText(font, fontSize, textPos2, IM_COL32(255, 255, 255, opacity), text2);
     }
@@ -306,7 +332,7 @@ void impl::showExampleWindow(const char* comment)
         ImGui::SliderInt("Opacity", &opacity, 0, 255);
         if (impl::state::g_pTimeScale)
         {
-            ImGui::SliderFloat("Time Scale", impl::state::g_pTimeScale, 0.0f, 10.0f, "%.2f");
+            ImGui::InputFloat("Time Scale", impl::state::g_pTimeScale, 0.1f, 0.5f, "%.2f");
         }
 
         if (ImGui::Button("Increment Enemy Rarity"))

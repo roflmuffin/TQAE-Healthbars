@@ -241,6 +241,7 @@ struct Player : Character {
     uint32_t currentLevel @ 0xc5c;
     PlayerGameInterface* gameInterface @ 0x1f18;
     uint32_t gold @ 0x40;
+    GameString name @ 0x1f30;
 }
 
 struct Npc : Character {
