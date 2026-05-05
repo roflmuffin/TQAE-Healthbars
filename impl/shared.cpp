@@ -1,10 +1,12 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+﻿#include <cmath>
+#define _CRT_SECURE_NO_WARNINGS
 
 #include "shared.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <string>
+#include <unordered_map>
 
 #include "../sdk/GAME/Character.hpp"
 #include "../sdk/GAME/GraphicsMesh.hpp"
@@ -12,11 +14,31 @@
 #include "../sdk/GAME/Monster.hpp"
 #include "../sdk/GAME/Player.hpp"
 #include "../vendor/imgui/imgui.h"
+#include "../vendor/imgui/imgui_internal.h"
 #include "d3d11_impl.h"
 
 static int opacity = 255;
 
 using namespace GAME;
+
+namespace {
+struct HealthBarAnimState
+{
+    float displayedHealth = 0.0f;
+    float trailingHealth = 0.0f;
+    float trailingDelay = 0.0f;
+    float damageFlashTimer = 0.0f;
+    float damageFlashHealth = 0.0f;
+    bool initialized = false;
+};
+
+std::unordered_map<Character*, HealthBarAnimState> g_healthBarStates;
+
+constexpr float kTrailingBarDelaySeconds = 0.45f;
+constexpr float kTrailingBarShrinkPerSecond = 0.75f;
+constexpr float kDamageFlashDurationSeconds = 0.18f;
+constexpr float kDamageFlashWidth = 3.0f;
+} // namespace
 
 static void RenderPointerRow(const char* name, const void* pointer)
 {
@@ -46,6 +68,11 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     auto* monster = reinterpret_cast<Monster*>(character);
     auto borderThickness = 1.0f;
 
+    if (maxHealth <= 0.0f)
+    {
+        return;
+    }
+
     switch (monster->classification)
     {
         case MonsterClassification::Champion:
@@ -70,8 +97,51 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     const ImVec2 shadowOffset(2.0f, 2.0f);
 
     // Calculate health percentage
-    float healthPct = health / maxHealth;
-    healthPct = std::min(healthPct, 1.0f);
+    float healthPct = std::clamp(health / maxHealth, 0.0f, 1.0f);
+
+    ImGuiIO& io = ImGui::GetIO();
+    auto& animState = g_healthBarStates[character];
+    if (!animState.initialized)
+    {
+        animState.displayedHealth = healthPct;
+        animState.trailingHealth = healthPct;
+        animState.damageFlashHealth = healthPct;
+        animState.initialized = true;
+    }
+
+    const float previousDisplayedHealth = animState.displayedHealth;
+    animState.displayedHealth = healthPct;
+
+    if (healthPct < previousDisplayedHealth)
+    {
+        animState.trailingDelay = kTrailingBarDelaySeconds;
+        animState.damageFlashTimer = kDamageFlashDurationSeconds;
+        animState.damageFlashHealth = healthPct;
+    }
+    else if (healthPct > previousDisplayedHealth)
+    {
+        animState.damageFlashTimer = 0.0f;
+        animState.damageFlashHealth = healthPct;
+    }
+
+    if (healthPct > animState.trailingHealth)
+    {
+        animState.trailingHealth = healthPct;
+        animState.trailingDelay = 0.0f;
+    }
+    else if (healthPct < animState.trailingHealth)
+    {
+        if (animState.trailingDelay > 0.0f)
+        {
+            animState.trailingDelay = std::max(0.0f, animState.trailingDelay - io.DeltaTime);
+        }
+        else
+        {
+            animState.trailingHealth = std::max(healthPct, animState.trailingHealth - (kTrailingBarShrinkPerSecond * io.DeltaTime));
+        }
+    }
+
+    animState.damageFlashTimer = std::max(0.0f, animState.damageFlashTimer - io.DeltaTime);
 
     // Center the health bar on the position
     ImVec2 topLeft = ImVec2(pos.x - (size.x * 0.5f), pos.y);
@@ -80,20 +150,46 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     // Background (empty health)
     draw->AddRectFilled(topLeft, bottomRight, IM_COL32(0, 0, 0, opacity));
 
-    // Health fill
-    ImU32 healthColor = IM_COL32(255, 0, 0, opacity); // Red
-    if (healthPct > 0.5f) healthColor = IM_COL32(0, 255, 0, opacity); // Green
-    else if (healthPct > 0.25f)
-        healthColor = IM_COL32(255, 165, 0, opacity); // Orange
+    ImU32 healthColor = IM_COL32(0, 255, 0, opacity);
+    if (character->team.major == GAME::TeamMajor_Friendly || character->team.major == GAME::TeamMajor_Human)
+    {
+        healthColor = IM_COL32(0, 255, 0, opacity); // Green for friendly
+    }
+    else
+    {
+        healthColor = IM_COL32(255, 0, 0, opacity); // Red for enemies
+    }
+
+    // // Health fill
+    // ImU32 healthColor = IM_COL32(255, 0, 0, opacity); // Red
+    // if (healthPct > 0.5f) healthColor = IM_COL32(0, 255, 0, opacity); // Green
+    // else if (healthPct > 0.25f)
+    //     healthColor = IM_COL32(255, 165, 0, opacity); // Orange
 
     draw->AddRectFilled(topLeft, ImVec2(topLeft.x + (size.x * healthPct), pos.y + size.y), healthColor);
+
+    if (animState.trailingHealth > healthPct)
+    {
+        const float currentHealthX = topLeft.x + (size.x * healthPct);
+        const float trailingHealthX = topLeft.x + (size.x * animState.trailingHealth);
+        draw->AddRectFilled(ImVec2(currentHealthX, topLeft.y), ImVec2(trailingHealthX, bottomRight.y), IM_COL32(255, 255, 255, opacity));
+    }
 
     // Border
     draw->AddRect(topLeft, bottomRight, IM_COL32(0, 0, 0, opacity), 0.0f, 0, borderThickness);
 
+    if (animState.damageFlashTimer > 0.0f && animState.damageFlashHealth > 0.0f)
+    {
+        const float flashAlpha = animState.damageFlashTimer / kDamageFlashDurationSeconds;
+        const float flashX = topLeft.x + (size.x * animState.damageFlashHealth);
+        draw->AddRectFilled(ImVec2(flashX - (kDamageFlashWidth * 0.5f), topLeft.y - 1.0f - borderThickness),
+                            ImVec2(flashX + (kDamageFlashWidth * 0.5f), bottomRight.y + 1.0f + borderThickness),
+                            IM_COL32(255, 255, 255, static_cast<int>(opacity * flashAlpha)));
+    }
+
     // Optional: Health text
     char text[64];
-    snprintf(text, sizeof(text), "%.0f / %.0f", health, maxHealth);
+    snprintf(text, sizeof(text), "%d / %d", (int)std::ceil(health), (int)std::ceil(maxHealth));
 
     ImVec2 textSize = ImGui::CalcTextSize(text);
 
@@ -101,8 +197,14 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     draw->AddText(ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text);
     draw->AddText(textPos, IM_COL32(255, 255, 255, opacity), text);
 
-    char text2[64];
-    snprintf(text2, sizeof(text2), "%p", character);
+    std::wstring description;
+    const char* descriptionTag = character->descriptionTag.c_str();
+    if (descriptionTag && *descriptionTag)
+    {
+        description = std::wstring(impl::state::fnLocalizationGetText(impl::state::g_pLocalizationManager, descriptionTag));
+    }
+    char text2[255];
+    snprintf(text2, sizeof(text2), "%p, %ls", character, description.c_str());
 
     ImVec2 textSize2 = ImGui::CalcTextSize(text2);
 
@@ -134,7 +236,8 @@ void impl::showExampleWindow(const char* comment)
             RenderPointerRow("Engine Pointer", impl::state::g_pEngine);
             RenderPointerRow("Game Engine Pointer", impl::state::g_pGameEngine);
             RenderPointerRow("Camera Pointer", impl::state::g_pGameCamera);
-            RenderPointerRow("Object Manager Pointer", impl::state::fnGetObjectManager ? impl::state::fnGetObjectManager() : nullptr);
+            RenderPointerRow("Localization Manager Pointer", impl::state::g_pLocalizationManager);
+            RenderPointerRow("TimeScale Pointer", impl::state::g_pTimeScale);
 
             auto* player = impl::state::g_pGameCamera ? impl::state::g_pGameCamera->player : nullptr;
             RenderPointerRow("Player Pointer", player);
@@ -152,12 +255,47 @@ void impl::showExampleWindow(const char* comment)
         ImGui::Text("Characters: %zu", impl::state::allCharacters.size());
         ImGui::Checkbox("Show Full Health Enemies", &showFullHealthEnemies);
         ImGui::SliderInt("Opacity", &opacity, 0, 255);
+        if (impl::state::g_pTimeScale)
+        {
+            ImGui::SliderFloat("Time Scale", impl::state::g_pTimeScale, 0.0f, 10.0f, "%.2f");
+        }
+
+        if (ImGui::Button("Make Enemies Boss Rarity"))
+        {
+            for (auto* character : impl::state::allCharacters)
+            {
+                if (!character)
+                {
+                    continue;
+                }
+
+                if (character->lifeState != LifeState::Alive)
+                {
+                    continue;
+                }
+
+                auto* monster = reinterpret_cast<Monster*>(character);
+                monster->classification = MonsterClassification::Boss;
+            }
+        }
     }
     ImGui::End();
 
     if (!impl::state::g_pGameCamera || !impl::state::g_pGameCamera->player || !impl::state::fnWorldCameraProject)
     {
         return;
+    }
+
+    for (auto it = g_healthBarStates.begin(); it != g_healthBarStates.end();)
+    {
+        if (!it->first || impl::state::allCharacters.find(it->first) == impl::state::allCharacters.end())
+        {
+            it = g_healthBarStates.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
     }
 
     ImGui::PushFont(impl::state::villageFont);

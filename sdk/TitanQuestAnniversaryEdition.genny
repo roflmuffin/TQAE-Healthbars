@@ -123,7 +123,19 @@ struct GraphicsMeshInstance {
     float somethingY @ 0x164;
 }
 
-struct Entity {
+struct Object {
+    char* objectName @ 0x04 [[utf8*]];
+    uint32_t objectId @ 0x20;
+}
+
+struct GameString {
+    char inlineBuffer[16] @ 0x0;
+    uint32_t size @ 0x10;
+    uint32_t capacity @ 0x14;
+}
+
+struct Entity : Object {
+    GameString descriptionTag @ 0x258;
     GraphicsMeshInstance* graphicsMeshInstance @ 0x184;
     float height @ 0x1e4;
     WorldCoords coords @ 0xa0;
@@ -189,6 +201,8 @@ struct Character : Entity {
     UniqueId* uniqueid @ 0x6c;
     Team team @ 0xD44;
 
+    char* portraitName @ 0x1e84 [[utf8*]];
+
     CombatManager combatManager @ 0x2c8;
     Inventory inventory @ 0x7a0;
 
@@ -226,13 +240,18 @@ struct Monster : Character {
     MonsterClassification classification @ 0x1FB8;
     bool givesXp @ 0x2294;
     uint32_t baseExperience @ 0xC60;
+    bool showStatusWidget @ 0x2229;
 }
 
 struct GameInfo {
     char* name @ 0x10 [[utf8*]];
     char* levelName @ 0x38 [[utf8*]];
-    uint32_t difficulty @ 0x124
-    int32_t elapsedGameTime @ 0x14c
+    uint32_t difficulty @ 0x124;
+    int32_t elapsedGameTime @ 0x14c;
+    int32_t gameSpeed @ 0x144;
+    uint32_t gameStartTime @ 0x148;
+    uint32_t playerLevel @ 0x11C;
+    uint32_t levelRange @ 0x120;
 }
 
 struct Mat4 {
@@ -278,20 +297,38 @@ struct GraphicsCanvas {
     RenderDevice* renderDevice @ 0x1c;
 }
 
+struct Display {
+    void* vft;
+}
+
 struct GraphicsEngine {
     GraphicsCanvas* graphicsCanvas @ 0x58;
     RenderDevice* renderDevice @ 0x34;
     int width @ 0x38;
-    int height @ 0x3c;
+    int height @ 0x3c; 
+    Display display @ 0x5c;
+    bool enableShadows @ 0xcb;
     bool enableBoundingBoxes @ 0xc5;
+    bool enableWireframe @ 0xc7;
+    bool enableLighting @ 0xcc;
+    bool enableWater @ 0xd6;
+    bool enableGridTiles @ 0xd2;
+    bool enableFrameRateDisplay @ 0xca;
+}
+
+struct PhysicsEngine {
+
 }
 
 struct Engine {
     void* vtable;
     World* world @ 0x34; 
     char* utilityFont @ 0x12c [[utf8*]];
+    char* logPath @ 0x98 [[utf8*]];
     int32_t elapsedSystemTime @ 0x48;
     GraphicsEngine* graphicsEngine @ 0x160;
+    PhysicsEngine* physicsEngine @ 0x15c;
+    GameInfo gameInfo @ 0x298;
     int updateTime @ 0x228;
     uint32_t frameCount @ 0x3f0;
     WorldFrustum worldFrustum @ 0x404;
@@ -299,13 +336,17 @@ struct Engine {
 
     bool characterCommandLogEnabled @ 0x1b8;
     bool characterDataLogEnabled @ 0x1b9;
+    bool isEditorMode @ 0x1ba;
+    bool isPSEditorMode @ 0x1bb;
+    bool showThreadMonitor @ 0x1bc;
+    bool teleportMode @ 0x8e9;
+    bool enableLog @ 0x3f4;
 }
 
 struct GameEngine {
     void* vtable0;
     void* vtable1;
     char* record @ 0xb8 [[utf8*]];
-    GameInfo* gameInfo @ 0x298;
     int32_t ui @ 0xfc8;
     float meleeRange @ 0x950;
     float meleeTargetDistance @ 0x980;

@@ -124,7 +124,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
         io.Fonts->AddFontDefault();
-        impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
+        // impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
+        impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Albertus MT Std Regular.otf", 16.0f);
 
         ImGui_ImplWin32_Init(desc.OutputWindow);
         ImGui_ImplDX11_Init(device, context);
@@ -142,13 +143,18 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         impl::state::g_pEngine = mem::modexportptr<Engine*, "Engine.dll", "?gEngine@GAME@@3PAVEngine@1@A">();
         impl::state::g_pGameEngine = mem::modexportptr<Engine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
         impl::state::g_pGameCamera = reinterpret_cast<GameCamera*>(((size_t)impl::state::g_pGameEngine) + 0x988);
+        impl::state::g_pLocalizationManager = mem::modexportptr<void*, "Engine.dll", "?m_Instance@LocalizationManager@GAME@@1PAV12@A">();
+        impl::state::g_pTimeScale = reinterpret_cast<float*>(mem::rva<"Engine.dll">(0x3700dc));
 
         impl::state::fnWorldCameraProject =
             reinterpret_cast<impl::state::ProjectFunc>(mem::modexport<"Engine.dll", "?Project@WorldCamera@GAME@@QBE?AVVec2@2@"
                                                                                     "ABVWorldVec3@2@ABVViewport@2@@Z">());
 
         impl::state::fnGetObjectManager = reinterpret_cast<impl::state::GetObjectManager>(
-            mem::modexport<"Engine.dll", "?Get@?$Singleton@VDebugRenderManager@GAME@@@GAME@@SAPAVDebugRenderManager@2@XZ">());
+            mem::modexport<"Engine.dll", "?Instance@LocalizationManager@GAME@@SAAAV12@XZ">());
+
+        impl::state::fnLocalizationGetText = reinterpret_cast<impl::state::LocalizationGetTextFunc>(
+            mem::modexport<"Engine.dll", "?Localize@LocalizationManager@GAME@@UAAPBGPBDZZ">());
 
         auto viewportTarget =
             reinterpret_cast<void*>(mem::modexport<"Engine.dll", "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">());
