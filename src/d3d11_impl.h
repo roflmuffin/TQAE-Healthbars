@@ -19,12 +19,12 @@ struct Character;
 
 using namespace GAME;
 
-namespace impl {
-namespace d3d11 {
+namespace ormenos {
+
 void init();
-}
 
 namespace state {
+
 inline uintptr_t gameBase = 0;
 inline uintptr_t engineBase = 0;
 inline float globalScaleFactor = 1.0f;
@@ -47,4 +47,4 @@ inline LocalizationGetTextFunc fnLocalizationGetText = nullptr;
 
 inline ImFont* villageFont;
 } // namespace state
-} // namespace impl
+} // namespace ormenos

@@ -1,1 +1,1 @@
-target_sources(KieroHookTest PRIVATE kiero.cpp)
+target_sources(Ormenos PRIVATE kiero.cpp)

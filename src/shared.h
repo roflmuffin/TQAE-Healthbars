@@ -1,5 +1,5 @@
 ﻿#pragma once
 
-namespace impl {
+namespace ormenos {
 void showExampleWindow(const char* comment);
 }

@@ -1,4 +1,4 @@
-target_sources(KieroHookTest PRIVATE
+target_sources(Ormenos PRIVATE
         "imgui_draw.cpp"
         "imgui_impl_dx11.cpp"
         "imgui_impl_win32.cpp"

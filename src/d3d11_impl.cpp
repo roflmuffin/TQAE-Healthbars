@@ -3,24 +3,31 @@
 #if KIERO_INCLUDE_D3D11
 
 #include "d3d11_impl.h"
-#include <assert.h>
+#include <cassert>
 #include <d3d11.h>
-
-#include "win32_impl.h"
 
 #include "../sdk/GAME/Character.hpp"
 #include "../sdk/GAME/Engine.hpp"
 #include "../sdk/GAME/GameCamera.hpp"
-#include "../sdk/GAME/GraphicsEngine.hpp"
 #include "../vendor/imgui/imgui.h"
 #include "../vendor/imgui/imgui_impl_dx11.h"
 #include "../vendor/imgui/imgui_impl_win32.h"
 #include "mem.hpp"
 #include <MinHook.h>
-#include <string>
-#include <vector>
 
-typedef long(__stdcall* Present)(IDXGISwapChain*, UINT, UINT);
+static WNDPROC oWndProc = nullptr;
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+LRESULT CALLBACK hkWindowProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
+{
+    if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam) > 0) return 1L;
+    return ::CallWindowProcA(oWndProc, hwnd, uMsg, wParam, lParam);
+}
+
+void win32_init(void* hwnd) { oWndProc = (WNDPROC)::SetWindowLongPtr((HWND)hwnd, GWLP_WNDPROC, (LONG)hkWindowProc); }
+
+using Present = long(__stdcall*)(IDXGISwapChain*, UINT, UINT);
 static Present oPresent = nullptr;
 
 using GetViewport_t = const Viewport&(__thiscall*)(void* thisptr);
@@ -35,8 +42,8 @@ const Viewport& __fastcall hkGetViewport(void* thisptr, void* edx)
 
     if (viewport->w > 0 && viewport->h > 0)
     {
-        impl::state::g_pViewport.w = viewport->w;
-        impl::state::g_pViewport.h = viewport->h;
+        ormenos::state::g_pViewport.w = viewport->w;
+        ormenos::state::g_pViewport.h = viewport->h;
     }
 
     return result;
@@ -52,11 +59,11 @@ static LifeState __fastcall hkGetLifeState(Character* this_, void* edx)
     {
         if (this_->bio.currentLife < 0)
         {
-            impl::state::allCharacters.erase(this_);
+            ormenos::state::allCharacters.erase(this_);
         }
         else if (this_->bio.currentLife > 0)
         {
-            impl::state::allCharacters.insert(this_);
+            ormenos::state::allCharacters.insert(this_);
         }
     }
     return result;
@@ -116,7 +123,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ID3D11DeviceContext* context;
         device->GetImmediateContext(&context);
 
-        impl::win32::init(desc.OutputWindow);
+        win32_init(desc.OutputWindow);
         hwnd = desc.OutputWindow;
 
         ImGui::CreateContext();
@@ -124,8 +131,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 
         io.Fonts->AddFontDefault();
-        // impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
-        impl::state::villageFont = io.Fonts->AddFontFromFileTTF("Albertus MT Std Regular.otf", 16.0f);
+        // ormenos::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
+        ormenos::state::villageFont = io.Fonts->AddFontFromFileTTF("Albertus MT Std Regular.otf", 16.0f);
 
         ImGui_ImplWin32_Init(desc.OutputWindow);
         ImGui_ImplDX11_Init(device, context);
@@ -137,25 +144,25 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         style.FontScaleDpi = scaleFactor;
         style.ScaleAllSizes(scaleFactor);
 
-        impl::state::globalScaleFactor = scaleFactor;
+        ormenos::state::globalScaleFactor = scaleFactor;
 
-        impl::state::engineBase = mem::rva<"Engine.dll">(0);
-        impl::state::gameBase = mem::rva<"Game.dll">(0);
+        ormenos::state::engineBase = mem::rva<"Engine.dll">(0);
+        ormenos::state::gameBase = mem::rva<"Game.dll">(0);
 
-        impl::state::g_pEngine = mem::modexportptr<Engine*, "Engine.dll", "?gEngine@GAME@@3PAVEngine@1@A">();
-        impl::state::g_pGameEngine = mem::modexportptr<Engine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
-        impl::state::g_pGameCamera = reinterpret_cast<GameCamera*>(((size_t)impl::state::g_pGameEngine) + 0x988);
-        impl::state::g_pLocalizationManager = mem::modexportptr<void*, "Engine.dll", "?m_Instance@LocalizationManager@GAME@@1PAV12@A">();
-        impl::state::g_pTimeScale = reinterpret_cast<float*>(mem::rva<"Engine.dll">(0x3700dc));
+        ormenos::state::g_pEngine = mem::modexportptr<Engine*, "Engine.dll", "?gEngine@GAME@@3PAVEngine@1@A">();
+        ormenos::state::g_pGameEngine = mem::modexportptr<Engine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
+        ormenos::state::g_pGameCamera = reinterpret_cast<GameCamera*>(((size_t)ormenos::state::g_pGameEngine) + 0x988);
+        ormenos::state::g_pLocalizationManager = mem::modexportptr<void*, "Engine.dll", "?m_Instance@LocalizationManager@GAME@@1PAV12@A">();
+        ormenos::state::g_pTimeScale = reinterpret_cast<float*>(mem::rva<"Engine.dll">(0x3700dc));
 
-        impl::state::fnWorldCameraProject =
-            reinterpret_cast<impl::state::ProjectFunc>(mem::modexport<"Engine.dll", "?Project@WorldCamera@GAME@@QBE?AVVec2@2@"
-                                                                                    "ABVWorldVec3@2@ABVViewport@2@@Z">());
+        ormenos::state::fnWorldCameraProject =
+            reinterpret_cast<ormenos::state::ProjectFunc>(mem::modexport<"Engine.dll", "?Project@WorldCamera@GAME@@QBE?AVVec2@2@"
+                                                                                       "ABVWorldVec3@2@ABVViewport@2@@Z">());
 
-        impl::state::fnGetObjectManager = reinterpret_cast<impl::state::GetObjectManager>(
+        ormenos::state::fnGetObjectManager = reinterpret_cast<ormenos::state::GetObjectManager>(
             mem::modexport<"Engine.dll", "?Instance@LocalizationManager@GAME@@SAAAV12@XZ">());
 
-        impl::state::fnLocalizationGetText = reinterpret_cast<impl::state::LocalizationGetTextFunc>(
+        ormenos::state::fnLocalizationGetText = reinterpret_cast<ormenos::state::LocalizationGetTextFunc>(
             mem::modexport<"Engine.dll", "?Localize@LocalizationManager@GAME@@UAAPBGPBDZZ">());
 
         auto viewportTarget =
@@ -183,13 +190,13 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
     UpdateImGuiMouseForBackBuffer(hwnd, pSwapChain);
     ImGui::NewFrame();
 
-    impl::showExampleWindow("D3D11");
+    ormenos::showExampleWindow("D3D11");
 
     ImGui::Render();
 
     if (frameCount % 60 == 0)
     {
-        impl::state::allCharacters.clear();
+        ormenos::state::allCharacters.clear();
     }
 
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -197,9 +204,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
     return oPresent(pSwapChain, SyncInterval, Flags);
 }
 
-void impl::d3d11::init()
+void ormenos::init()
 {
-    auto status = kiero::bind(8, (void**)&oPresent, hkPresent11);
+    auto status = kiero::bind(8, (void**)&oPresent, reinterpret_cast<void*>(hkPresent11));
     assert(status == kiero::Status::Success);
 }
 

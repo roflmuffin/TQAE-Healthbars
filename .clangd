@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [-D_WIN32, -std=c++20, "--include-directory=vendor\\minhook\\include"]

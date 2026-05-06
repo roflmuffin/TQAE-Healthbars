@@ -77,8 +77,8 @@ struct HealthBarConfig
     bool showDebugText = false;
 
     ImVec2 size = ImVec2(55, 5);
-    float trailingBarDelaySeconds = 0.20f;
-    float trailingBarEaseSpeed = 8.0f;
+    float trailingBarDelaySeconds = 0.50f;
+    float trailingBarEaseSpeed = 5.0f;
     float damageFlashDurationSeconds = 0.18f;
     float damageFlashWidth = 2.0f;
 
@@ -91,7 +91,7 @@ static HealthBarConfig g_healthBarConfig = {};
 
 void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 {
-    const float scaleFactor = std::max(impl::state::globalScaleFactor, 0.01f);
+    const float scaleFactor = std::max(ormenos::state::globalScaleFactor, 0.01f);
     size.x *= scaleFactor;
     size.y *= scaleFactor;
 
@@ -100,7 +100,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     auto* monster = reinterpret_cast<Monster*>(character);
     auto borderThickness = 1.0f * scaleFactor;
 
-    auto* player = impl::state::g_pGameCamera ? impl::state::g_pGameCamera->player : nullptr;
+    auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
     auto isPlayer = character->team.major == GAME::TeamMajor_Human;
     auto isMonster = character->team.major == GAME::TeamMajor_Monster;
     auto isPlayerMinion = character->team.major == GAME::TeamMajor_Human &&
@@ -257,7 +257,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             const char* descriptionTag = character->descriptionTag.c_str();
             if (descriptionTag && *descriptionTag)
             {
-                description = std::wstring(impl::state::fnLocalizationGetText(impl::state::g_pLocalizationManager, descriptionTag));
+                description = std::wstring(ormenos::state::fnLocalizationGetText(ormenos::state::g_pLocalizationManager, descriptionTag));
             }
             char text2[255];
             snprintf(text2, sizeof(text2), "%ls", description.c_str());
@@ -278,7 +278,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
         const char* descriptionTag = character->descriptionTag.c_str();
         if (descriptionTag && *descriptionTag)
         {
-            description = std::wstring(impl::state::fnLocalizationGetText(impl::state::g_pLocalizationManager, descriptionTag));
+            description = std::wstring(ormenos::state::fnLocalizationGetText(ormenos::state::g_pLocalizationManager, descriptionTag));
         }
         char text2[255];
         snprintf(text2, sizeof(text2), "%p, %ls", character, description.c_str());
@@ -291,12 +291,12 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     }
 }
 
-void impl::showExampleWindow(const char* comment)
+void ormenos::showExampleWindow(const char* comment)
 {
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_::ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
 
-    if (ImGui::Begin("KieroHookTest"))
+    if (ImGui::Begin("TQ Healthbars"))
     {
         ImGui::Text("Renderer: %s", comment);
 
@@ -307,15 +307,15 @@ void impl::showExampleWindow(const char* comment)
             ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.15f);
             ImGui::TableHeadersRow();
 
-            RenderPointerRow("Engine Base", reinterpret_cast<const void*>(impl::state::engineBase));
-            RenderPointerRow("Game Base", reinterpret_cast<const void*>(impl::state::gameBase));
-            RenderPointerRow("Engine Pointer", impl::state::g_pEngine);
-            RenderPointerRow("Game Engine Pointer", impl::state::g_pGameEngine);
-            RenderPointerRow("Camera Pointer", impl::state::g_pGameCamera);
-            RenderPointerRow("Localization Manager Pointer", impl::state::g_pLocalizationManager);
-            RenderPointerRow("TimeScale Pointer", impl::state::g_pTimeScale);
+            RenderPointerRow("Engine Base", reinterpret_cast<const void*>(ormenos::state::engineBase));
+            RenderPointerRow("Game Base", reinterpret_cast<const void*>(ormenos::state::gameBase));
+            RenderPointerRow("Engine Pointer", ormenos::state::g_pEngine);
+            RenderPointerRow("Game Engine Pointer", ormenos::state::g_pGameEngine);
+            RenderPointerRow("Camera Pointer", ormenos::state::g_pGameCamera);
+            RenderPointerRow("Localization Manager Pointer", ormenos::state::g_pLocalizationManager);
+            RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
 
-            auto* player = impl::state::g_pGameCamera ? impl::state::g_pGameCamera->player : nullptr;
+            auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
             RenderPointerRow("Player Pointer", player);
 
             ImGui::EndTable();
@@ -326,18 +326,18 @@ void impl::showExampleWindow(const char* comment)
             }
         }
 
-        ImGui::Text("Viewport: %i x %i", impl::state::g_pViewport.w, impl::state::g_pViewport.h);
+        ImGui::Text("Viewport: %i x %i", ormenos::state::g_pViewport.w, ormenos::state::g_pViewport.h);
         ImGui::Separator();
-        ImGui::Text("Characters: %zu", impl::state::allCharacters.size());
+        ImGui::Text("Characters: %zu", ormenos::state::allCharacters.size());
         ImGui::SliderInt("Opacity", &opacity, 0, 255);
-        if (impl::state::g_pTimeScale)
+        if (ormenos::state::g_pTimeScale)
         {
-            ImGui::InputFloat("Time Scale", impl::state::g_pTimeScale, 0.1f, 0.5f, "%.2f");
+            ImGui::InputFloat("Time Scale", ormenos::state::g_pTimeScale, 0.1f, 0.5f, "%.2f");
         }
 
         if (ImGui::Button("Increment Enemy Rarity"))
         {
-            for (auto* character : impl::state::allCharacters)
+            for (auto* character : ormenos::state::allCharacters)
             {
                 if (!character)
                 {
@@ -384,14 +384,14 @@ void impl::showExampleWindow(const char* comment)
     }
     ImGui::End();
 
-    if (!impl::state::g_pGameCamera || !impl::state::g_pGameCamera->player || !impl::state::fnWorldCameraProject)
+    if (!ormenos::state::g_pGameCamera || !ormenos::state::g_pGameCamera->player || !ormenos::state::fnWorldCameraProject)
     {
         return;
     }
 
     for (auto it = g_healthBarStates.begin(); it != g_healthBarStates.end();)
     {
-        if (!it->first || impl::state::allCharacters.find(it->first) == impl::state::allCharacters.end())
+        if (!it->first || ormenos::state::allCharacters.find(it->first) == ormenos::state::allCharacters.end())
         {
             it = g_healthBarStates.erase(it);
         }
@@ -401,8 +401,8 @@ void impl::showExampleWindow(const char* comment)
         }
     }
 
-    ImGui::PushFont(impl::state::villageFont);
-    for (auto* character : impl::state::allCharacters)
+    ImGui::PushFont(ormenos::state::villageFont);
+    for (auto* character : ormenos::state::allCharacters)
     {
         if (!character)
         {
@@ -447,7 +447,7 @@ void impl::showExampleWindow(const char* comment)
                                      .z = character->coords.location.position.z - (character->graphicsMeshInstance->somethingX / 2) } };
 
         Vec2 screenPos{};
-        impl::state::fnWorldCameraProject(impl::state::g_pGameCamera, &screenPos, &headCoords, &impl::state::g_pViewport);
+        ormenos::state::fnWorldCameraProject(ormenos::state::g_pGameCamera, &screenPos, &headCoords, &ormenos::state::g_pViewport);
 
         if (screenPos.x <= 0.0f || screenPos.y <= 0.0f)
         {
