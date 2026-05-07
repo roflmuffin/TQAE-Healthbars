@@ -2,16 +2,12 @@
 
 #include <cstdint>
 #include <set>
-#include <string>
 
 #include "../vendor/imgui/imgui.h"
 #include "../sdk/GAME/Engine.hpp"
-#include "../sdk/GAME/Entity.hpp"
 #include "../sdk/GAME/GameCamera.hpp"
 #include "../sdk/GAME/Vec2.hpp"
 #include "../sdk/GAME/Viewport.hpp"
-#include "../sdk/GAME/WorldCoords.hpp"
-#include "shared.h"
 
 namespace GAME {
 struct Character;

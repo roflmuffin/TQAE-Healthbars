@@ -1,4 +1,5 @@
 #include "../vendor/kiero/kiero.h"
+#include "shared.h"
 
 #if KIERO_INCLUDE_D3D11
 
@@ -86,11 +87,11 @@ static void UpdateImGuiMouseForBackBuffer(HWND hwnd, IDXGISwapChain* swapChain)
     RECT clientRect{};
     if (!GetClientRect(hwnd, &clientRect)) return;
 
-    const float clientW = static_cast<float>(clientRect.right - clientRect.left);
-    const float clientH = static_cast<float>(clientRect.bottom - clientRect.top);
+    const auto clientW = static_cast<float>(clientRect.right - clientRect.left);
+    const auto clientH = static_cast<float>(clientRect.bottom - clientRect.top);
 
-    const float bufferW = static_cast<float>(bbDesc.Width);
-    const float bufferH = static_cast<float>(bbDesc.Height);
+    const auto bufferW = static_cast<float>(bbDesc.Width);
+    const auto bufferH = static_cast<float>(bbDesc.Height);
 
     if (clientW <= 0.0f || clientH <= 0.0f || bufferW <= 0.0f || bufferH <= 0.0f) return;
 
@@ -129,6 +130,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+        io.IniFilename = nullptr;
 
         io.Fonts->AddFontDefault();
         // ormenos::state::villageFont = io.Fonts->AddFontFromFileTTF("Village.ttf", 16.0f);
@@ -165,14 +167,14 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ormenos::state::fnLocalizationGetText = reinterpret_cast<ormenos::state::LocalizationGetTextFunc>(
             mem::modexport<"Engine.dll", "?Localize@LocalizationManager@GAME@@UAAPBGPBDZZ">());
 
-        auto viewportTarget =
+        auto* viewportTarget =
             reinterpret_cast<void*>(mem::modexport<"Engine.dll", "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">());
         if (viewportTarget && MH_CreateHook(viewportTarget, &hkGetViewport, reinterpret_cast<void**>(&oGetViewport)) == MH_OK)
         {
             MH_EnableHook(viewportTarget);
         }
 
-        auto lifeStateTarget =
+        auto* lifeStateTarget =
             reinterpret_cast<void*>(mem::modexport<"Game.dll", "?GetLifeState@Character@GAME@@UBE?BW4Character_LifeState@2@XZ">());
         if (lifeStateTarget && MH_CreateHook(lifeStateTarget, &hkGetLifeState, reinterpret_cast<void**>(&oGetLifeState)) == MH_OK)
         {
@@ -190,7 +192,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
     UpdateImGuiMouseForBackBuffer(hwnd, pSwapChain);
     ImGui::NewFrame();
 
-    ormenos::showExampleWindow("D3D11");
+    ormenos::show_config_window();
+    ormenos::render_health_bars();
 
     ImGui::Render();
 

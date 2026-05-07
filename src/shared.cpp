@@ -85,6 +85,7 @@ struct HealthBarConfig
     ImColor friendlyColor = ImColor(22, 145, 22, 255);
     ImColor enemyColor = ImColor(164, 28, 24, 255);
     ImColor trailingBarColor = ImColor(174, 109, 109, 255);
+    int32_t opacity = 255;
 };
 
 static HealthBarConfig g_healthBarConfig = {};
@@ -197,7 +198,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     ImVec2 bottomRight = ImVec2(pos.x + (size.x * 0.5f), pos.y + size.y);
 
     // Background (empty health)
-    draw->AddRectFilled(topLeft, bottomRight, IM_COL32(7, 7, 7, opacity));
+    draw->AddRectFilled(topLeft, bottomRight, IM_COL32(7, 7, 7, g_healthBarConfig.opacity));
 
     ImU32 healthColor = IM_COL32(0, 255, 0, opacity);
     if (character->team.major == GAME::TeamMajor_Friendly || character->team.major == GAME::TeamMajor_Human)
@@ -219,7 +220,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     }
 
     // Border
-    draw->AddRect(topLeft, bottomRight, IM_COL32(0, 0, 0, opacity), 0.0f, 0, borderThickness);
+    draw->AddRect(topLeft, bottomRight, IM_COL32(0, 0, 0, g_healthBarConfig.opacity), 0.0f, 0, borderThickness);
 
     if (animState.damageFlashTimer > 0.0f && animState.damageFlashHealth > 0.0f)
     {
@@ -228,7 +229,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
         const float flashHalfWidth = (g_healthBarConfig.damageFlashWidth * scaleFactor) * 0.5f;
         draw->AddRectFilled(ImVec2(flashX - flashHalfWidth, topLeft.y - scaleFactor - borderThickness),
                             ImVec2(flashX + flashHalfWidth, bottomRight.y + scaleFactor + borderThickness),
-                            IM_COL32(255, 255, 255, static_cast<int>(opacity * flashAlpha)));
+                            IM_COL32(255, 255, 255, static_cast<int>(g_healthBarConfig.opacity * flashAlpha)));
     }
 
     if (g_healthBarConfig.showHealthAmountTextForMonsters || g_healthBarConfig.showHealthAmountTextForPlayers)
@@ -243,8 +244,9 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             ImVec2 textSize = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
 
             ImVec2 textPos(pos.x - (textSize.x * 0.5f), pos.y - (16.0f * scaleFactor) + ((size.y - textSize.y) * 0.5f));
-            draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text);
-            draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, opacity), text);
+            draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y),
+                          IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text);
+            draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text);
         }
     }
 
@@ -265,9 +267,10 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             ImVec2 textSize2 = font ? font->CalcTextSizeA(24, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
             ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (40.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
-            draw->AddText(font, 24, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text2);
+            draw->AddText(font, 24, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
+                          IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
 
-            g_monsterClassificationColors[monster->classification].Value.w = opacity / 255.0f;
+            g_monsterClassificationColors[monster->classification].Value.w = g_healthBarConfig.opacity / 255.0f;
             draw->AddText(font, 24, textPos2, g_monsterClassificationColors[monster->classification], text2);
         }
     }
@@ -286,104 +289,14 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
         ImVec2 textSize2 = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
         ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (66.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
-        draw->AddText(font, fontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y), IM_COL32(0, 0, 0, opacity), text2);
-        draw->AddText(font, fontSize, textPos2, IM_COL32(255, 255, 255, opacity), text2);
+        draw->AddText(font, fontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
+                      IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
+        draw->AddText(font, fontSize, textPos2, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text2);
     }
 }
 
-void ormenos::showExampleWindow(const char* comment)
+void ormenos::render_health_bars()
 {
-    ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_::ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(300, 500), ImGuiCond_::ImGuiCond_FirstUseEver);
-
-    if (ImGui::Begin("TQ Healthbars"))
-    {
-        ImGui::Text("Renderer: %s", comment);
-
-        if (ImGui::BeginTable("Pointers", 3, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
-        {
-            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.40f);
-            ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthStretch, 0.45f);
-            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.15f);
-            ImGui::TableHeadersRow();
-
-            RenderPointerRow("Engine Base", reinterpret_cast<const void*>(ormenos::state::engineBase));
-            RenderPointerRow("Game Base", reinterpret_cast<const void*>(ormenos::state::gameBase));
-            RenderPointerRow("Engine Pointer", ormenos::state::g_pEngine);
-            RenderPointerRow("Game Engine Pointer", ormenos::state::g_pGameEngine);
-            RenderPointerRow("Camera Pointer", ormenos::state::g_pGameCamera);
-            RenderPointerRow("Localization Manager Pointer", ormenos::state::g_pLocalizationManager);
-            RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
-
-            auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
-            RenderPointerRow("Player Pointer", player);
-
-            ImGui::EndTable();
-
-            if (player)
-            {
-                ImGui::Checkbox("Player Invisible", &player->isInvisible);
-            }
-        }
-
-        ImGui::Text("Viewport: %i x %i", ormenos::state::g_pViewport.w, ormenos::state::g_pViewport.h);
-        ImGui::Separator();
-        ImGui::Text("Characters: %zu", ormenos::state::allCharacters.size());
-        ImGui::SliderInt("Opacity", &opacity, 0, 255);
-        if (ormenos::state::g_pTimeScale)
-        {
-            ImGui::InputFloat("Time Scale", ormenos::state::g_pTimeScale, 0.1f, 0.5f, "%.2f");
-        }
-
-        if (ImGui::Button("Increment Enemy Rarity"))
-        {
-            for (auto* character : ormenos::state::allCharacters)
-            {
-                if (!character)
-                {
-                    continue;
-                }
-
-                if (character->lifeState != LifeState::Alive)
-                {
-                    continue;
-                }
-
-                auto* monster = reinterpret_cast<Monster*>(character);
-
-                if (monster->classification == MonsterClassification::Quest)
-                {
-                    monster->classification = MonsterClassification::Normal;
-                }
-                else
-                {
-                    monster->classification = static_cast<MonsterClassification>(static_cast<int>(monster->classification) + 1);
-                }
-            }
-        }
-
-        if (ImGui::CollapsingHeader("Health Bar Config"))
-        {
-            ImGui::Checkbox("Show on Full Health Enemies", &g_healthBarConfig.showFullHealthEnemies);
-            ImGui::Checkbox("Show Health Bar for Players", &g_healthBarConfig.showHealthBarForPlayers);
-            ImGui::Checkbox("Show Health Bar for Monsters", &g_healthBarConfig.showHealthBarForMonsters);
-            ImGui::Checkbox("Show Health Amount Text for Players", &g_healthBarConfig.showHealthAmountTextForPlayers);
-            ImGui::Checkbox("Show Health Amount Text for Monsters", &g_healthBarConfig.showHealthAmountTextForMonsters);
-            ImGui::Checkbox("Display Minion Health Bars", &g_healthBarConfig.showMinionHealthBars);
-            ImGui::Checkbox("Show Debug Text", &g_healthBarConfig.showDebugText);
-            ImGui::Separator();
-            ImGui::SliderFloat2("Size", (float*)&g_healthBarConfig.size, 5.0f, 200.0f, "%.0f");
-            ImGui::SliderFloat("Trailing Bar Delay (seconds)", &g_healthBarConfig.trailingBarDelaySeconds, 0.0f, 1.0f, "%.2f");
-            ImGui::SliderFloat("Trailing Bar Ease Speed", &g_healthBarConfig.trailingBarEaseSpeed, 1.0f, 30.0f, "%.1f");
-            ImGui::SliderFloat("Damage Flash Duration (seconds)", &g_healthBarConfig.damageFlashDurationSeconds, 0.0f, 1.0f, "%.2f");
-            ImGui::SliderFloat("Damage Flash Width", &g_healthBarConfig.damageFlashWidth, 1.0f, 10.0f, "%.1f");
-            ImGui::ColorEdit4("Friendly Color", (float*)&g_healthBarConfig.friendlyColor);
-            ImGui::ColorEdit4("Enemy Color", (float*)&g_healthBarConfig.enemyColor);
-            ImGui::ColorEdit4("Trailing Bar Color", (float*)&g_healthBarConfig.trailingBarColor);
-        }
-    }
-    ImGui::End();
-
     if (!ormenos::state::g_pGameCamera || !ormenos::state::g_pGameCamera->player || !ormenos::state::fnWorldCameraProject)
     {
         return;
@@ -457,4 +370,147 @@ void ormenos::showExampleWindow(const char* comment)
         RenderHealthBar(character, ImVec2(screenPos.x, screenPos.y), g_healthBarConfig.size);
     }
     ImGui::PopFont();
+}
+
+bool m_is_ui_focused = false;
+bool m_draw_ui = false;
+bool m_last_draw_ui = false;
+bool m_ui_option_transparent = false;
+
+void ormenos::show_config_window()
+{
+    m_is_ui_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
+
+    if (m_ui_option_transparent)
+    {
+        auto& style = ImGui::GetStyle();
+        if (m_is_ui_focused)
+        {
+            style.Alpha = 1.0f;
+        }
+        else
+        {
+            if (ImGui::IsWindowHovered(ImGuiFocusedFlags_AnyWindow))
+            {
+                style.Alpha = 0.9f;
+            }
+            else
+            {
+                style.Alpha = 0.8f;
+            }
+        }
+    }
+    else
+    {
+        auto& style = ImGui::GetStyle();
+        style.Alpha = 1.0f;
+    }
+
+    auto fontSize = ImGui::GetFontSize();
+    ImGui::SetNextWindowPos(ImVec2(fontSize * 2, fontSize * 2), ImGuiCond_::ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(fontSize * 32, fontSize * 40), ImGuiCond_::ImGuiCond_FirstUseEver);
+
+    bool is_open = true;
+    ImGui::Begin("TQ Healthbars", &is_open);
+
+    ImGui::Text("Default Menu Key: Insert");
+    ImGui::Checkbox("Transparency", &m_ui_option_transparent);
+
+    if (ImGui::CollapsingHeader("Health Bar Config", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Show on Full Health Enemies", &g_healthBarConfig.showFullHealthEnemies);
+        ImGui::Checkbox("Show Health Bar for Players", &g_healthBarConfig.showHealthBarForPlayers);
+        ImGui::Checkbox("Show Health Bar for Monsters", &g_healthBarConfig.showHealthBarForMonsters);
+        ImGui::Checkbox("Show Health Amount Text for Players", &g_healthBarConfig.showHealthAmountTextForPlayers);
+        ImGui::Checkbox("Show Health Amount Text for Monsters", &g_healthBarConfig.showHealthAmountTextForMonsters);
+        ImGui::Checkbox("Display Minion Health Bars", &g_healthBarConfig.showMinionHealthBars);
+        ImGui::Checkbox("Show Debug Text", &g_healthBarConfig.showDebugText);
+        ImGui::Separator();
+        ImGui::SliderFloat2("Size", (float*)&g_healthBarConfig.size, 5.0f, 200.0f, "%.0f");
+        ImGui::SliderFloat("Trailing Bar Delay (seconds)", &g_healthBarConfig.trailingBarDelaySeconds, 0.0f, 1.0f, "%.2f");
+        ImGui::SliderFloat("Trailing Bar Ease Speed", &g_healthBarConfig.trailingBarEaseSpeed, 1.0f, 30.0f, "%.1f");
+        ImGui::SliderFloat("Damage Flash Duration (seconds)", &g_healthBarConfig.damageFlashDurationSeconds, 0.0f, 1.0f, "%.2f");
+        ImGui::SliderFloat("Damage Flash Width", &g_healthBarConfig.damageFlashWidth, 1.0f, 10.0f, "%.1f");
+        ImGui::ColorEdit4("Friendly Color", (float*)&g_healthBarConfig.friendlyColor);
+        ImGui::ColorEdit4("Enemy Color", (float*)&g_healthBarConfig.enemyColor);
+        ImGui::ColorEdit4("Trailing Bar Color", (float*)&g_healthBarConfig.trailingBarColor);
+        ImGui::SliderInt("Opacity", &g_healthBarConfig.opacity, 0, 255);
+    }
+
+    if (ImGui::CollapsingHeader("Developer Tools"))
+    {
+        if (ImGui::BeginTable("Pointers", 3, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+        {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch, 0.40f);
+            ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthStretch, 0.45f);
+            ImGui::TableSetupColumn("Action", ImGuiTableColumnFlags_WidthStretch, 0.15f);
+            ImGui::TableHeadersRow();
+
+            RenderPointerRow("Engine Base", reinterpret_cast<const void*>(ormenos::state::engineBase));
+            RenderPointerRow("Game Base", reinterpret_cast<const void*>(ormenos::state::gameBase));
+            RenderPointerRow("Engine Pointer", ormenos::state::g_pEngine);
+            RenderPointerRow("Game Engine Pointer", ormenos::state::g_pGameEngine);
+            RenderPointerRow("Camera Pointer", ormenos::state::g_pGameCamera);
+            RenderPointerRow("Localization Manager Pointer", ormenos::state::g_pLocalizationManager);
+            RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
+
+            auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
+            RenderPointerRow("Player Pointer", player);
+
+            ImGui::EndTable();
+
+            if (player)
+            {
+                ImGui::Checkbox("Player Invisible", &player->isInvisible);
+            }
+        }
+
+        ImGui::Text("Viewport: %i x %i", ormenos::state::g_pViewport.w, ormenos::state::g_pViewport.h);
+        ImGui::Separator();
+        ImGui::Text("Characters: %zu", ormenos::state::allCharacters.size());
+        if (ormenos::state::g_pTimeScale)
+        {
+            ImGui::InputFloat("Time Scale", ormenos::state::g_pTimeScale, 0.1f, 0.5f, "%.2f");
+        }
+
+        if (ImGui::Button("Increment Enemy Rarity"))
+        {
+            for (auto* character : ormenos::state::allCharacters)
+            {
+                if (!character)
+                {
+                    continue;
+                }
+
+                if (character->lifeState != LifeState::Alive)
+                {
+                    continue;
+                }
+
+                auto* monster = reinterpret_cast<Monster*>(character);
+
+                if (monster->classification == MonsterClassification::Quest)
+                {
+                    monster->classification = MonsterClassification::Normal;
+                }
+                else
+                {
+                    monster->classification = static_cast<MonsterClassification>(static_cast<int>(monster->classification) + 1);
+                }
+            }
+        }
+    }
+
+    ImGui::End();
+
+    if (!is_open)
+    {
+        bool prev_state = m_draw_ui;
+        m_draw_ui = is_open;
+    }
+    else if (m_draw_ui != m_last_draw_ui)
+    {
+        bool prev_state = m_draw_ui;
+        m_draw_ui = true;
+    }
 }
