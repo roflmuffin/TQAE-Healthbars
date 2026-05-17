@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <set>
+#include <string>
 
 #include "../vendor/imgui/imgui.h"
 #include "../sdk/GAME/Engine.hpp"
@@ -32,14 +33,20 @@ inline void* g_pLocalizationManager;
 inline float* g_pTimeScale = nullptr;
 inline Viewport g_pViewport{};
 inline std::set<Character*> allCharacters{};
+inline std::string debugLog;
+inline void* lastCreatedWidget = nullptr;
 
 using ProjectFunc = void(__thiscall*)(WorldCamera* pThis, Vec2* result, WorldVec3* worldPos, Viewport* viewport);
 using GetObjectManager = void* (*)();
 using LocalizationGetTextFunc = const wchar_t*(__cdecl*)(void* pThis, const char* key);
+using GetDialogManagerFunc = void*(__thiscall*)(void* pThis);
+using WidgetOnCreateFunc = bool(__thiscall*)(void* pThis);
 
 inline ProjectFunc fnWorldCameraProject = nullptr;
 inline GetObjectManager fnGetObjectManager = nullptr;
 inline LocalizationGetTextFunc fnLocalizationGetText = nullptr;
+inline GetDialogManagerFunc fnGetDialogManager = nullptr;
+inline WidgetOnCreateFunc fnWidgetOnCreate = nullptr;
 
 inline ImFont* villageFont;
 } // namespace state

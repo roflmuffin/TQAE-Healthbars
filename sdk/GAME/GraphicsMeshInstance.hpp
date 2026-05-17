@@ -1,4 +1,5 @@
 #pragma once
+#include "Color.hpp"
 namespace GAME {
 struct SkeletalPose;
 }
@@ -21,6 +22,14 @@ struct GraphicsMeshInstance {
     float somethingY; // 0x164
     private: char pad_168[0x4]; public:
     float somethingX; // 0x16c
-}; // Size: 0x170
+    private: char pad_170[0x58]; public:
+    GAME::Color diffuseColor; // 0x1c8
+    float highlight; // 0x1d8
+    GAME::Color color; // 0x1dc
+    private: char pad_1ec[0x3c]; public:
+    bool isDissolvingOne; // 0x228
+    private: char pad_229[0x27]; public:
+    bool isDissolvingTwo; // 0x250
+}; // Size: 0x251
 #pragma pack(pop)
 }

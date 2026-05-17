@@ -1,4 +1,5 @@
 #pragma once
+#include "Color.hpp"
 #include "GameString.hpp"
 #include "Object.hpp"
 #include "WorldCoords.hpp"
@@ -18,6 +19,10 @@ struct Entity : public Object {
     float height; // 0x1e4
     private: char pad_1e8[0x70]; public:
     GAME::GameString descriptionTag; // 0x258
-}; // Size: 0x270
+    private: char pad_270[0x4]; public:
+    GAME::Color tintColor; // 0x274
+    GAME::Color highlightColor; // 0x284
+    bool highlightEnabled; // 0x294
+}; // Size: 0x295
 #pragma pack(pop)
 }

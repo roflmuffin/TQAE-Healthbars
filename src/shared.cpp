@@ -81,6 +81,7 @@ struct HealthBarConfig
     float trailingBarEaseSpeed = 5.0f;
     float damageFlashDurationSeconds = 0.18f;
     float damageFlashWidth = 2.0f;
+    float textPadding = 8.0f;
 
     ImColor friendlyColor = ImColor(22, 145, 22, 255);
     ImColor enemyColor = ImColor(164, 28, 24, 255);
@@ -95,6 +96,8 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     const float scaleFactor = std::max(ormenos::state::globalScaleFactor, 0.01f);
     size.x *= scaleFactor;
     size.y *= scaleFactor;
+
+    ImVec2 runningPos = ImVec2(pos.x, pos.y);
 
     float health = character->bio.currentLife;
     float maxHealth = character->bio.maxLife;
@@ -232,6 +235,11 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
                             IM_COL32(255, 255, 255, static_cast<int>(g_healthBarConfig.opacity * flashAlpha)));
     }
 
+    const float textPadding = g_healthBarConfig.textPadding * scaleFactor;
+
+    runningPos.y -= (size.y * 0.5f);
+    runningPos.y -= textPadding * 2.0f;
+
     if (g_healthBarConfig.showHealthAmountTextForMonsters || g_healthBarConfig.showHealthAmountTextForPlayers)
     {
         if ((isPlayer && g_healthBarConfig.showHealthAmountTextForPlayers) ||
@@ -243,17 +251,19 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
             ImVec2 textSize = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
 
-            ImVec2 textPos(pos.x - (textSize.x * 0.5f), pos.y - (16.0f * scaleFactor) + ((size.y - textSize.y) * 0.5f));
+            ImVec2 textPos(runningPos.x - (textSize.x * 0.5f), runningPos.y + ((size.y - textSize.y) * 0.5f));
             draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y),
                           IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text);
             draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text);
+
+            runningPos.y -= textSize.y + textPadding;
         }
     }
 
     if (isMonster)
     {
         auto* monster = reinterpret_cast<Monster*>(character);
-        if (static_cast<uint32_t>(monster->classification) > 0)
+        if (static_cast<uint32_t>(monster->classification) > 0 || character->graphicsMeshInstance->highlight)
         {
             std::wstring description;
             const char* descriptionTag = character->descriptionTag.c_str();
@@ -266,12 +276,14 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
             ImVec2 textSize2 = font ? font->CalcTextSizeA(24, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
-            ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (40.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
+            ImVec2 textPos2(runningPos.x - (textSize2.x * 0.5f), runningPos.y + ((size.y - textSize2.y) * 0.5f));
             draw->AddText(font, 24, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
                           IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
 
             g_monsterClassificationColors[monster->classification].Value.w = g_healthBarConfig.opacity / 255.0f;
             draw->AddText(font, 24, textPos2, g_monsterClassificationColors[monster->classification], text2);
+
+            runningPos.y -= textSize2.y + textPadding;
         }
     }
 
@@ -288,10 +300,12 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 
         ImVec2 textSize2 = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
-        ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y - (66.0f * scaleFactor) + ((size.y - textSize2.y) * 0.5f));
+        ImVec2 textPos2(pos.x - (textSize2.x * 0.5f), pos.y + ((size.y - textSize2.y) * 0.5f));
         draw->AddText(font, fontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
                       IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
         draw->AddText(font, fontSize, textPos2, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text2);
+
+        runningPos.y -= textSize2.y + textPadding;
     }
 }
 
@@ -431,6 +445,7 @@ void ormenos::show_config_window()
         ImGui::SliderFloat("Trailing Bar Ease Speed", &g_healthBarConfig.trailingBarEaseSpeed, 1.0f, 30.0f, "%.1f");
         ImGui::SliderFloat("Damage Flash Duration (seconds)", &g_healthBarConfig.damageFlashDurationSeconds, 0.0f, 1.0f, "%.2f");
         ImGui::SliderFloat("Damage Flash Width", &g_healthBarConfig.damageFlashWidth, 1.0f, 10.0f, "%.1f");
+        ImGui::SliderFloat("Padding", &g_healthBarConfig.textPadding, 0, 30.0f, "%.1f");
         ImGui::ColorEdit4("Friendly Color", (float*)&g_healthBarConfig.friendlyColor);
         ImGui::ColorEdit4("Enemy Color", (float*)&g_healthBarConfig.enemyColor);
         ImGui::ColorEdit4("Trailing Bar Color", (float*)&g_healthBarConfig.trailingBarColor);
@@ -452,7 +467,11 @@ void ormenos::show_config_window()
             RenderPointerRow("Game Engine Pointer", ormenos::state::g_pGameEngine);
             RenderPointerRow("Camera Pointer", ormenos::state::g_pGameCamera);
             RenderPointerRow("Localization Manager Pointer", ormenos::state::g_pLocalizationManager);
+            RenderPointerRow("Dialog Manager Pointer", ormenos::state::fnGetDialogManager
+                                                           ? ormenos::state::fnGetDialogManager(ormenos::state::g_pGameEngine)
+                                                           : nullptr);
             RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
+            RenderPointerRow("Last Created Widget", ormenos::state::lastCreatedWidget);
 
             auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
             RenderPointerRow("Player Pointer", player);
@@ -462,6 +481,8 @@ void ormenos::show_config_window()
             if (player)
             {
                 ImGui::Checkbox("Player Invisible", &player->isInvisible);
+                ImGui::Checkbox("Player Invincible", &player->invincible);
+                ImGui::Checkbox("Player Observer Mode", &player->observerCheatMode);
             }
         }
 

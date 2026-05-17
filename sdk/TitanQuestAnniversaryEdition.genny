@@ -203,6 +203,18 @@ struct CombatManager {
     int32_t combatIdleTime @ 0xbc;
 }
 
+enum Weapon_Type : uint32_t 
+{
+    None = 0,     
+}
+
+struct SkillManager {
+  bool isRangedWeapon @ 0x120;
+  Weapon_Type left @ 0x118;
+  Weapon_Type right @ 0x11c;
+  bool hideSkillsFromUi @ 0x190;
+}
+
 struct Inventory {
     void* vft;
 }
@@ -215,6 +227,12 @@ struct Character : Entity {
     char* type @ 0xc20 [[utf8*]];
     CharacterBio bio @ 0x844;
     bool isInvisible @ 0xD50;
+    bool invincible @ 0xd64;
+    bool god @ 0xd65;
+    bool omnipotent @ 0xd66;
+    bool fastcasting @ 0xd6c;
+    bool observerCheatMode @ 0x113c;
+    bool observerMode @ 0x113d;
     uint32_t attackerId @ 0x38c;
     uint32_t level @ 0xc5c;
     uint32_t money @ 0xc14;
@@ -224,6 +242,8 @@ struct Character : Entity {
     char* portraitName @ 0x1e84 [[utf8*]];
 
     CombatManager combatManager @ 0x2c8;
+    SkillManager skillManager @ 0x568; 
+
     Inventory inventory @ 0x7a0;
 
     uint32_t experience @ 0xc60;
@@ -364,15 +384,28 @@ struct Engine {
     bool enableLog @ 0x3f4;
 }
 
+struct Dialog {
+
+}
+
+struct DialogManager {
+    Dialog* begin;
+    Dialog* end;
+}
+
+struct GameUiInterface {
+    int32_t somethingAboutSkills @ 0x1C55;
+}
+
 struct GameEngine {
     void* vtable0;
     void* vtable1;
+    DialogManager dialogManager @ 0x58;
     char* record @ 0xb8 [[utf8*]];
-    int32_t ui @ 0xfc8;
     float meleeRange @ 0x950;
     float meleeTargetDistance @ 0x980;
     float maximumRange @ 0x960;
-    void* gameUiInterface @ 0xfc8;
+    GameUiInterface* gameUiInterface @ 0xfc8;
     bool renderingDisabled @ 0x28E8;
     bool debugRendering @ 0x2a8f;
     bool debugRendering2 @ 0x2a8e;

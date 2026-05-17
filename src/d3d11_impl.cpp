@@ -70,6 +70,12 @@ static LifeState __fastcall hkGetLifeState(Character* this_, void* edx)
     return result;
 }
 
+static void __fastcall hkWidgetOnCreate(void* this_)
+{
+    ormenos::state::lastCreatedWidget = this_;
+    ormenos::state::fnWidgetOnCreate(this_);
+}
+
 static int frameCount = 0;
 static bool init = false;
 
@@ -167,6 +173,9 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ormenos::state::fnLocalizationGetText = reinterpret_cast<ormenos::state::LocalizationGetTextFunc>(
             mem::modexport<"Engine.dll", "?Localize@LocalizationManager@GAME@@UAAPBGPBDZZ">());
 
+        ormenos::state::fnGetDialogManager = reinterpret_cast<ormenos::state::GetDialogManagerFunc>(
+            mem::modexport<"Game.dll", "?GetDialogManager@GameEngine@GAME@@QAEAAVDialogManager@2@XZ">());
+
         auto* viewportTarget =
             reinterpret_cast<void*>(mem::modexport<"Engine.dll", "?GetViewport@GraphicsSceneRenderer@GAME@@UBEABVViewport@2@XZ">());
         if (viewportTarget && MH_CreateHook(viewportTarget, &hkGetViewport, reinterpret_cast<void**>(&oGetViewport)) == MH_OK)
@@ -179,6 +188,12 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         if (lifeStateTarget && MH_CreateHook(lifeStateTarget, &hkGetLifeState, reinterpret_cast<void**>(&oGetLifeState)) == MH_OK)
         {
             MH_EnableHook(lifeStateTarget);
+        }
+
+        auto fnWidgetOnCreate = reinterpret_cast<void*>(mem::modexport<"Widget.dll", "??0Widget@GAME@@QAE@XZ">());
+        if (fnWidgetOnCreate && MH_CreateHook(fnWidgetOnCreate, &hkWidgetOnCreate, nullptr) == MH_OK)
+        {
+            MH_EnableHook(fnWidgetOnCreate);
         }
 
         init = true;
