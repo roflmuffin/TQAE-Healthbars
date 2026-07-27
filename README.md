@@ -53,6 +53,7 @@ src/
   main.cpp              DllMain + init thread, waits for d3d11.dll then calls kiero::init
   dinput8_proxy.cpp     dinput8.dll export forwarders (loads real DLL from System32)
   d3d11_impl.cpp/.h     D3D11 Present hook, ImGui bootstrap, game-side hooks (GetViewport, GetLifeState)
+  health_bar_config.*   TOML-backed health bar configuration and persistence
   shared.cpp/.h         ImGui overlay UI + per-character health bar rendering
   mem.hpp               Compile-time module/export resolution helpers (mem::rva, mem::modexport)
 sdk/GAME/               Reverse-engineered game structs (Character, Engine, GameCamera, …)

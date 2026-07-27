@@ -17,10 +17,12 @@
 #include "../vendor/imgui/imgui.h"
 #include "../vendor/imgui/imgui_internal.h"
 #include "d3d11_impl.h"
+#include "health_bar_config.h"
 
 static int opacity = 255;
 
 using namespace GAME;
+using ormenos::g_healthBarConfig;
 
 namespace {
 struct HealthBarAnimState
@@ -65,31 +67,6 @@ static void RenderPointerRow(const char* name, const void* pointer)
         ImGui::SetClipboardText(pointerText);
     }
 }
-
-struct HealthBarConfig
-{
-    bool showFullHealthEnemies = true;
-    bool showHealthBarForPlayers = true;
-    bool showHealthBarForMonsters = true;
-    bool showHealthAmountTextForPlayers = true;
-    bool showHealthAmountTextForMonsters = false;
-    bool showMinionHealthBars = false;
-    bool showDebugText = false;
-
-    ImVec2 size = ImVec2(55, 5);
-    float trailingBarDelaySeconds = 0.50f;
-    float trailingBarEaseSpeed = 5.0f;
-    float damageFlashDurationSeconds = 0.18f;
-    float damageFlashWidth = 2.0f;
-    float textPadding = 8.0f;
-
-    ImColor friendlyColor = ImColor(22, 145, 22, 255);
-    ImColor enemyColor = ImColor(164, 28, 24, 255);
-    ImColor trailingBarColor = ImColor(174, 109, 109, 255);
-    int32_t opacity = 255;
-};
-
-static HealthBarConfig g_healthBarConfig = {};
 
 void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
 {
@@ -147,6 +124,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     const ImVec2 shadowOffset(1.0f * scaleFactor, 1.0f * scaleFactor);
     ImFont* font = ImGui::GetFont();
     const float fontSize = font ? (font->LegacySize * scaleFactor) : (ImGui::GetFontSize() * scaleFactor);
+    const float healthBarFontSize = g_healthBarConfig.baseFontSize * scaleFactor;
 
     // Calculate health percentage
     float healthPct = std::clamp(health / maxHealth, 0.0f, 1.0f);
@@ -249,12 +227,12 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             char text[64];
             snprintf(text, sizeof(text), "%d / %d", (int)std::ceil(health), (int)std::ceil(maxHealth));
 
-            ImVec2 textSize = font ? font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
+            ImVec2 textSize = font ? font->CalcTextSizeA(healthBarFontSize, FLT_MAX, 0.0f, text) : ImGui::CalcTextSize(text);
 
             ImVec2 textPos(runningPos.x - (textSize.x * 0.5f), runningPos.y + ((size.y - textSize.y) * 0.5f));
-            draw->AddText(font, fontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y),
+            draw->AddText(font, healthBarFontSize, ImVec2(textPos.x + shadowOffset.x, textPos.y + shadowOffset.y),
                           IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text);
-            draw->AddText(font, fontSize, textPos, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text);
+            draw->AddText(font, healthBarFontSize, textPos, IM_COL32(255, 255, 255, g_healthBarConfig.opacity), text);
 
             runningPos.y -= textSize.y + textPadding;
         }
@@ -274,14 +252,14 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             char text2[255];
             snprintf(text2, sizeof(text2), "%ls", description.c_str());
 
-            ImVec2 textSize2 = font ? font->CalcTextSizeA(24, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
+            ImVec2 textSize2 = font ? font->CalcTextSizeA(healthBarFontSize, FLT_MAX, 0.0f, text2) : ImGui::CalcTextSize(text2);
 
             ImVec2 textPos2(runningPos.x - (textSize2.x * 0.5f), runningPos.y + ((size.y - textSize2.y) * 0.5f));
-            draw->AddText(font, 24, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
+            draw->AddText(font, healthBarFontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
                           IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
 
             g_monsterClassificationColors[monster->classification].Value.w = g_healthBarConfig.opacity / 255.0f;
-            draw->AddText(font, 24, textPos2, g_monsterClassificationColors[monster->classification], text2);
+            draw->AddText(font, healthBarFontSize, textPos2, g_monsterClassificationColors[monster->classification], text2);
 
             runningPos.y -= textSize2.y + textPadding;
         }
@@ -432,24 +410,32 @@ void ormenos::show_config_window()
 
     if (ImGui::CollapsingHeader("Health Bar Config", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::Checkbox("Show on Full Health Enemies", &g_healthBarConfig.showFullHealthEnemies);
-        ImGui::Checkbox("Show Health Bar for Players", &g_healthBarConfig.showHealthBarForPlayers);
-        ImGui::Checkbox("Show Health Bar for Monsters", &g_healthBarConfig.showHealthBarForMonsters);
-        ImGui::Checkbox("Show Health Amount Text for Players", &g_healthBarConfig.showHealthAmountTextForPlayers);
-        ImGui::Checkbox("Show Health Amount Text for Monsters", &g_healthBarConfig.showHealthAmountTextForMonsters);
-        ImGui::Checkbox("Display Minion Health Bars", &g_healthBarConfig.showMinionHealthBars);
-        ImGui::Checkbox("Show Debug Text", &g_healthBarConfig.showDebugText);
+        bool configChanged = false;
+        configChanged |= ImGui::Checkbox("Show on Full Health Enemies", &g_healthBarConfig.showFullHealthEnemies);
+        configChanged |= ImGui::Checkbox("Show Health Bar for Players", &g_healthBarConfig.showHealthBarForPlayers);
+        configChanged |= ImGui::Checkbox("Show Health Bar for Monsters", &g_healthBarConfig.showHealthBarForMonsters);
+        configChanged |= ImGui::Checkbox("Show Health Amount Text for Players", &g_healthBarConfig.showHealthAmountTextForPlayers);
+        configChanged |= ImGui::Checkbox("Show Health Amount Text for Monsters", &g_healthBarConfig.showHealthAmountTextForMonsters);
+        configChanged |= ImGui::Checkbox("Display Minion Health Bars", &g_healthBarConfig.showMinionHealthBars);
+        configChanged |= ImGui::Checkbox("Show Debug Text", &g_healthBarConfig.showDebugText);
         ImGui::Separator();
-        ImGui::SliderFloat2("Size", (float*)&g_healthBarConfig.size, 5.0f, 200.0f, "%.0f");
-        ImGui::SliderFloat("Trailing Bar Delay (seconds)", &g_healthBarConfig.trailingBarDelaySeconds, 0.0f, 1.0f, "%.2f");
-        ImGui::SliderFloat("Trailing Bar Ease Speed", &g_healthBarConfig.trailingBarEaseSpeed, 1.0f, 30.0f, "%.1f");
-        ImGui::SliderFloat("Damage Flash Duration (seconds)", &g_healthBarConfig.damageFlashDurationSeconds, 0.0f, 1.0f, "%.2f");
-        ImGui::SliderFloat("Damage Flash Width", &g_healthBarConfig.damageFlashWidth, 1.0f, 10.0f, "%.1f");
-        ImGui::SliderFloat("Padding", &g_healthBarConfig.textPadding, 0, 30.0f, "%.1f");
-        ImGui::ColorEdit4("Friendly Color", (float*)&g_healthBarConfig.friendlyColor);
-        ImGui::ColorEdit4("Enemy Color", (float*)&g_healthBarConfig.enemyColor);
-        ImGui::ColorEdit4("Trailing Bar Color", (float*)&g_healthBarConfig.trailingBarColor);
-        ImGui::SliderInt("Opacity", &g_healthBarConfig.opacity, 0, 255);
+        configChanged |= ImGui::SliderFloat2("Size", (float*)&g_healthBarConfig.size, 5.0f, 200.0f, "%.0f");
+        configChanged |= ImGui::SliderFloat("Trailing Bar Delay (seconds)", &g_healthBarConfig.trailingBarDelaySeconds, 0.0f, 1.0f, "%.2f");
+        configChanged |= ImGui::SliderFloat("Trailing Bar Ease Speed", &g_healthBarConfig.trailingBarEaseSpeed, 1.0f, 30.0f, "%.1f");
+        configChanged |=
+            ImGui::SliderFloat("Damage Flash Duration (seconds)", &g_healthBarConfig.damageFlashDurationSeconds, 0.0f, 1.0f, "%.2f");
+        configChanged |= ImGui::SliderFloat("Damage Flash Width", &g_healthBarConfig.damageFlashWidth, 1.0f, 10.0f, "%.1f");
+        configChanged |= ImGui::SliderFloat("Padding", &g_healthBarConfig.textPadding, 0, 30.0f, "%.1f");
+        configChanged |= ImGui::SliderFloat("Base Font Size", &g_healthBarConfig.baseFontSize, 8.0f, 72.0f, "%.0f");
+        configChanged |= ImGui::ColorEdit4("Friendly Color", (float*)&g_healthBarConfig.friendlyColor);
+        configChanged |= ImGui::ColorEdit4("Enemy Color", (float*)&g_healthBarConfig.enemyColor);
+        configChanged |= ImGui::ColorEdit4("Trailing Bar Color", (float*)&g_healthBarConfig.trailingBarColor);
+        configChanged |= ImGui::SliderInt("Opacity", &g_healthBarConfig.opacity, 0, 255);
+
+        if (configChanged)
+        {
+            g_healthBarConfig.save();
+        }
     }
 
     if (ImGui::CollapsingHeader("Developer Tools"))

@@ -4,6 +4,7 @@
 #if KIERO_INCLUDE_D3D11
 
 #include "d3d11_impl.h"
+#include "health_bar_config.h"
 #include <cassert>
 #include <d3d11.h>
 
@@ -132,6 +133,8 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
         win32_init(desc.OutputWindow);
         hwnd = desc.OutputWindow;
+
+        ormenos::g_healthBarConfig.initialize();
 
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();

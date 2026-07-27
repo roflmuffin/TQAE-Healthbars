@@ -9,6 +9,7 @@ add_library(Ormenos SHARED
     src/main.cpp
     src/dinput8_proxy.cpp
     src/d3d11_impl.cpp
+    src/health_bar_config.cpp
     src/shared.cpp
 )
 
