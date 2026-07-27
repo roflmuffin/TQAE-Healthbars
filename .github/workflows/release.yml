@@ -20,7 +20,8 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        run: cmake -S . -B build -A Win32
+        # MinHook still declares CMake 3.0 compatibility, which CMake 4 no longer supports.
+        run: cmake -S . -B build -A Win32 -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: Build Ormenos
         run: cmake --build build --config Release --target Ormenos
