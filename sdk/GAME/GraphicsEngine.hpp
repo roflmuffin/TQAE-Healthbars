@@ -16,7 +16,7 @@ struct GraphicsEngine {
     private: char pad_40[0x18]; public:
     GAME::GraphicsCanvas* graphicsCanvas; // 0x58
     GAME::Display display; // 0x5c
-    private: char pad_60[0x65]; public:
+    private: char pad_64[0x61]; public:
     bool enableBoundingBoxes; // 0xc5
     private: char pad_c6[0x1]; public:
     bool enableWireframe; // 0xc7

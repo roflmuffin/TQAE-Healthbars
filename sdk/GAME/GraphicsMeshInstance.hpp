@@ -1,10 +1,10 @@
 #pragma once
 #include "Color.hpp"
 namespace GAME {
-struct SkeletalPose;
+struct GraphicsMesh;
 }
 namespace GAME {
-struct GraphicsMesh;
+struct SkeletalPose;
 }
 namespace GAME {
 struct Vec3;

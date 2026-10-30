@@ -124,6 +124,22 @@ struct Color {
     float a;
 }
 
+struct Rect {
+    float x;
+    float y;
+    float w;
+    float h;
+}
+
+struct Plane {
+    float x;
+    float y;
+    float z;
+    float w;
+}
+
+struct Name {}
+
 struct GraphicsMeshInstance {
     SkeletalPose* pose @ 0x128;
     GraphicsMesh* graphicsMesh @ 0x4;
@@ -334,12 +350,83 @@ struct GameCamera : WorldCamera {
 
 struct RenderDevice {}
 
+struct RenderDevice {}
+struct RenderSurface {}
+struct GraphicsShader2 {}
+struct GraphicsTexture {}
+struct RenderTexture {}
+struct RenderDynamicVertexBuffer {}
+struct RenderDynamicIndexBuffer {}
+
+struct GraphicsCanvasTempSurfaceEntry {
+    bool inUse @ 0x0;
+    int32_t width @ 0x4;
+    int32_t height @ 0x8;
+    int32_t colorFormat @ 0xc;
+    int32_t depthFormat @ 0x10;
+    RenderSurface* surface @ 0x14;
+}
+
 struct GraphicsCanvas {
+    void* vtable @ 0x0;
+
+    GraphicsShader2* colorGradingFilterShader @ 0x4;
+    GraphicsShader2* ambientOcclusionShader @ 0x8;
+    GraphicsShader2* colorGradingShader @ 0xc;
+    GraphicsShader2* antiAliasingShader @ 0x10;
+    GraphicsShader2* gammaShader @ 0x14;
+
+    float depth @ 0x18;
+
     RenderDevice* renderDevice @ 0x1c;
+    RenderSurface* primarySurface @ 0x20;
+    RenderSurface* targetSurface @ 0x24;
+
+    char renderStateStack[0x14] @ 0x28;
+
+    float resolutionOriginX @ 0x3c;
+    float resolutionOriginY @ 0x40;
+    float resolutionWidth @ 0x44;
+    float resolutionHeight @ 0x48;
+
+    RenderDynamicVertexBuffer* dynamicVertexBuffer @ 0x4c;
+    RenderDynamicIndexBuffer* dynamicIndexBuffer @ 0x50;
+
+    int32_t dynamicVertexBufferThreshold @ 0x54;
+    int32_t dynamicIndexBufferThreshold @ 0x58;
+
+    RenderDynamicVertexBuffer** dynamicVertexBuffersBegin @ 0x5c;
+    RenderDynamicVertexBuffer** dynamicVertexBuffersEnd @ 0x60;
+    RenderDynamicVertexBuffer** dynamicVertexBuffersCapacityEnd @ 0x64;
+
+    RenderDynamicIndexBuffer** dynamicIndexBuffersBegin @ 0x68;
+    RenderDynamicIndexBuffer** dynamicIndexBuffersEnd @ 0x6c;
+    RenderDynamicIndexBuffer** dynamicIndexBuffersCapacityEnd @ 0x70;
+
+    int32_t dynamicVertexBufferRingIndex @ 0x74;
+    int32_t dynamicIndexBufferRingIndex @ 0x78;
+
+    GraphicsTexture* blackTexture @ 0x7c;
+    GraphicsTexture* whiteTexture @ 0x80;
+    GraphicsTexture* checkerboardTexture @ 0x84;
+    RenderTexture* gammaRampTexture @ 0x88;
+
+    Plane lastSetClippingPlane @ 0x8c;
+    Color clearColor @ 0x9c;
+
+    GraphicsCanvasTempSurfaceEntry* temporarySurfacesBegin @ 0xac;
+    GraphicsCanvasTempSurfaceEntry* temporarySurfacesEnd @ 0xb0;
+    GraphicsCanvasTempSurfaceEntry* temporarySurfacesCapacityEnd @ 0xb4;
+
+    float resolutionAdjustmentX @ 0xb8;
+    float resolutionAdjustmentY @ 0xbc;
+
+    Rect clippingRect @ 0xc0;
 }
 
 struct Display {
-    void* vft;
+    void** begin @ 0x0;
+    void** end @ 0x4;
 }
 
 struct GraphicsEngine {
@@ -352,6 +439,7 @@ struct GraphicsEngine {
     bool enableBoundingBoxes @ 0xc5;
     bool enableWireframe @ 0xc7;
     bool enableLighting @ 0xcc;
+    bool enableStats @ 0xc8;
     bool enableWater @ 0xd6;
     bool enableGridTiles @ 0xd2;
     bool enableFrameRateDisplay @ 0xca;

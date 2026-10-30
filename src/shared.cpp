@@ -68,7 +68,7 @@ static void RenderPointerRow(const char* name, const void* pointer)
     }
 }
 
-void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
+static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 pos, ImVec2 size)
 {
     const float scaleFactor = std::max(ormenos::state::globalScaleFactor, 0.01f);
     size.x *= scaleFactor;
@@ -120,9 +120,9 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
             break;
     }
 
-    ImDrawList* draw = ImGui::GetForegroundDrawList();
+    ImDrawList* draw = &drawList;
     const ImVec2 shadowOffset(1.0f * scaleFactor, 1.0f * scaleFactor);
-    ImFont* font = ImGui::GetFont();
+    ImFont* font = ormenos::state::villageFont ? ormenos::state::villageFont : ImGui::GetFont();
     const float fontSize = font ? (font->LegacySize * scaleFactor) : (ImGui::GetFontSize() * scaleFactor);
     const float healthBarFontSize = g_healthBarConfig.baseFontSize * scaleFactor;
 
@@ -287,7 +287,7 @@ void RenderHealthBar(Character* character, ImVec2 pos, ImVec2 size)
     }
 }
 
-void ormenos::render_health_bars()
+void ormenos::render_health_bars(ImDrawList& draw)
 {
     if (!ormenos::state::g_pGameCamera || !ormenos::state::g_pGameCamera->player || !ormenos::state::fnWorldCameraProject)
     {
@@ -306,7 +306,6 @@ void ormenos::render_health_bars()
         }
     }
 
-    ImGui::PushFont(ormenos::state::villageFont);
     for (auto* character : ormenos::state::allCharacters)
     {
         if (!character)
@@ -359,9 +358,8 @@ void ormenos::render_health_bars()
             continue;
         }
 
-        RenderHealthBar(character, ImVec2(screenPos.x, screenPos.y), g_healthBarConfig.size);
+        RenderHealthBar(draw, character, ImVec2(screenPos.x, screenPos.y), g_healthBarConfig.size);
     }
-    ImGui::PopFont();
 }
 
 bool m_is_ui_focused = false;
@@ -458,6 +456,7 @@ void ormenos::show_config_window()
                                                            : nullptr);
             RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
             RenderPointerRow("Last Created Widget", ormenos::state::lastCreatedWidget);
+            RenderPointerRow("Render Rect Solid Function", reinterpret_cast<const void*>(ormenos::state::fnRenderRectSolid));
 
             auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
             RenderPointerRow("Player Pointer", player);
