@@ -82,6 +82,7 @@ struct Region {
 }
 
 struct WorldVec3 {
+    bool PutOnFloor();
     Region* region;
     Vec3 position;
 }
@@ -316,6 +317,8 @@ struct Character {
 }
 
 struct Character : Actor 0x1f18 {
+    WorldVec3 GetPathPosition();
+    bool IsTeleporting();
     bool TakeAttack(ParametersCombat* parameters);
     uint32_t GetControllerId();
     uint32_t controllerId @ 0xc10;
@@ -447,11 +450,16 @@ struct ControllerCharacter 0x1e4 {
 }
 
 struct ControllerPlayer : ControllerCharacter 0x3b4 {
+    void SetTargetPoint(WorldVec3* target);
+    void ForceSetRepeated(bool repeated);
+    bool HandleMoveTo(WorldVec3* target, bool stationary);
     PlayerInventoryCtrl inventoryCtrl @ 0x360;
     PlayerInventoryCtrl* GetInventoryCtrl();
 }
 
 struct ObjectManager {
+    static ObjectManager* Get();
+    ControllerPlayer* FindControllerPlayer(uint32_t id); // TQ.exe RVA 0x7300
     // Game.dll RVAs for the typed object lookups used by the pickup code.
     ControllerCharacter* FindControllerCharacter(uint32_t id); // 0x17400
     Item* FindItem(uint32_t id); // 0x17b40
@@ -714,6 +722,7 @@ struct Engine {
     PhysicsEngine* physicsEngine @ 0x15c;
     GameInfo gameInfo @ 0x298;
     int updateTime @ 0x228;
+    Display inputDisplay @ 0x270;
     uint32_t frameCount @ 0x3f0;
     WorldFrustum priorFrameFrustum @ 0x4a4;
     float uiScale @ 0x940;
@@ -740,6 +749,69 @@ struct GameUiInterface {
     int32_t somethingAboutSkills @ 0x1C55;
 }
 
+struct InputButtonEvent {
+    void* vtable @ 0x0;
+    int device @ 0x4;
+    int deviceEvent @ 0x8;
+    int button @ 0xc;
+    int action @ 0x10;
+}
+
+struct InputMouseEvent {
+    int device @ 0x0;
+    int deviceEvent @ 0x4;
+    int action @ 0x8;
+}
+
+struct UIChatWindow {
+    virtual bool IsVisible() @ 31;
+}
+
+struct UIPlayerHud {
+    // The chat window is embedded. Its first word is the vptr of UIChatWindow.
+    void* chatWindowVptr @ 0x45d08;
+    UIChatWindow* GetChatWindow();
+    bool HasOpenWindow(); // TQ.exe RVA 0x1385d0
+}
+
+struct GameplayInput {
+    virtual void Update() @ 0;
+    virtual bool HandleKeyEvent(InputButtonEvent* event) @ 2;
+    virtual bool HandleMouseEvent(InputMouseEvent* event) @ 3;
+    static bool IsGameTimePaused();
+    static bool SkillInProgress();
+    static bool ResolvePortalTarget(WorldVec3* origin, WorldVec3* ahead, WorldVec3* target, float distance);
+    UIPlayerHud* hud @ 0xc94;
+    bool stationaryAttack @ 0x1658;
+    int stickStopMs @ 0x170c;
+}
+
+// TQ.exe import address table slots for the native gameplay calls.
+enum class GameplayImportRva : uint32_t {
+    ObjectManagerGet = 0x1ed21c,
+    IsGameTimePaused = 0x1ed3c8,
+    PutOnFloor = 0x1ed658,
+    IsGameWaiting = 0x1edf68,
+    GetMainPlayer = 0x1ee0f0,
+    SetTargetPoint = 0x1ee1b8,
+    GetPathPosition = 0x1ee1e8,
+    ForceSetRepeated = 0x1ee1ec,
+    HandleMoveTo = 0x1ee1f0,
+    IsTeleporting = 0x1ee204,
+    IsGameLoading = 0x1ee208,
+}
+
+// Function entry points in the supported TQ.exe image.
+enum class GameplayFunctionRva : uint32_t {
+    FindControllerPlayer = 0x7300,
+    ResolvePortalTarget = 0x54560,
+    UpdateStopTimer = 0x561a0,
+    HandleKeyEvent = 0x58740,
+    SkillInProgress = 0x59a10,
+    HandleMouseEvent = 0x5aa50,
+    HasOpenWindow = 0x1385d0,
+}
+
 struct LoadTable {
     virtual char* GetValue(char* key, char* fallback) @ 6;
 }
@@ -757,6 +829,8 @@ struct TextStyleNode {
 }
 
 struct GameEngine {
+    bool IsGameLoading();
+    bool IsGameWaiting();
     Player* GetMainPlayer();
     GameTextClass GetItemTextClass(ItemClassification classification);
     GameString GetGameTextStyleName(GameTextClass textClass);

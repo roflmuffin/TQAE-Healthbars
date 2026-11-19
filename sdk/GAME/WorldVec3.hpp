@@ -9,6 +9,7 @@ namespace GAME {
 struct WorldVec3 {
     GAME::Region* region; // 0x0
     GAME::Vec3 position; // 0x4
+    bool PutOnFloor();
 }; // Size: 0x10
 #pragma pack(pop)
 }

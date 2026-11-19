@@ -8,18 +8,19 @@ Ormenos brings modern ARPG style floating health bars to Titan Quest: Anniversar
 
 ## Features
 
-- Floating health bars over players, monsters and summons.
+- Floating health bars over players, monsters and summons
 - Rarity-aware bars (Normal / Champion / Hero / Boss / Quest) with coloured NPC names
+- Optional WASD movement with mouse attack priority
 - Modern "delayed damage" damage animation
 - Tweaked damage number animations
 - White enemy hitflashes with configurable intensity
 - Red hover effect for hostile characters with configurable intensity
-- Nearby autoloot with separate Gold, Potions, Relic Shards, and Monster Charms options.
-- Autoloot Delay under Loot sets the minimum ground age (default 750 ms) for all four categories.
-- Successful autoloot shows a popup above the player's head, such as `+32 Gold`.
-- New loot highlighting in the inventory (marked seen by hover).
+- Nearby autoloot with separate Gold, Potions, Relic Shards, and Monster Charms options
+- Autoloot Delay under Loot sets the minimum ground age (default 750 ms) for all four categories
+- Successful autoloot shows a popup above the player's head, such as `+32 Gold`
+- New loot highlighting in the inventory (marked seen by hover)
 - DPI-aware scaling that follows the game's resolution
-- Extensive configuration: toggles for full-health enemies only, minions, players, monsters; show hp numbers; colour pickers; size and animation tuning, all options are toggleable.
+- Extensive configuration: toggles for full-health enemies only, minions, players, monsters; show hp numbers; colour pickers; size and animation tuning, all options are toggleable
 
 ---
 
@@ -34,7 +35,9 @@ Ormenos brings modern ARPG style floating health bars to Titan Quest: Anniversar
 
 1. Download the latest `dinput8.dll` from the [Releases](../../releases) page.
 2. Drop it next to `TQ.exe` in your Titan Quest install folder (typically `…/steamapps/common/Titan Quest Anniversary Edition/`).
-3. Launch the game normally. The overlay window appears in the top-left; click it and drag to move.
+3. Launch the game. The settings menu opens in the top-left with its sections collapsed and hides after 10 seconds. Press **Insert** to reopen or hide it.
+
+Choose **Menu toggle key** at the top of the menu to change the shortcut. The selection is saved immediately to `ormenos.toml`.
 
 ### Uninstall
 

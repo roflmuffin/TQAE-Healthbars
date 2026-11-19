@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include "GameInfo.hpp"
+#include "Display.hpp"
 #include "WorldFrustum.hpp"
 namespace GAME {
 struct GraphicsEngine;
@@ -36,7 +37,9 @@ struct Engine {
     bool showThreadMonitor; // 0x1bc
     private: char pad_1bd[0x6b]; public:
     int updateTime; // 0x228
-    private: char pad_22c[0x6c]; public:
+    private: char pad_22c[0x44]; public:
+    GAME::Display inputDisplay; // 0x270
+    private: char pad_278[0x20]; public:
     GAME::GameInfo gameInfo; // 0x298
     private: char pad_3e8[0x8]; public:
     uint32_t frameCount; // 0x3f0

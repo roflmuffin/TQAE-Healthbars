@@ -22,6 +22,7 @@
 #include "d3d11_impl.h"
 #include "health_bar_config.h"
 #include "hit_flash.h"
+#include "wasd_movement.h"
 
 static int opacity = 255;
 
@@ -372,19 +373,43 @@ void ormenos::render_health_bars(ImDrawList& draw)
     }
 }
 
-bool m_is_ui_focused = false;
-bool m_draw_ui = false;
-bool m_last_draw_ui = false;
-bool m_ui_option_transparent = false;
+static bool menuVisible = true;
+
+bool ormenos::menu_contains_point(float x, float y)
+{
+    if (!menuVisible || !ImGui::GetCurrentContext()) return false;
+    for (auto* window : ImGui::GetCurrentContext()->Windows)
+        if (window->Active && !window->Hidden && !(window->Flags & ImGuiWindowFlags_NoMouseInputs) &&
+            window->OuterRectClipped.Contains(ImVec2(x, y)))
+            return true;
+    return false;
+}
 
 void ormenos::show_config_window()
 {
-    m_is_ui_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow);
+    static double hideAt = ImGui::GetTime() + 10.0;
+    const bool wasVisible = menuVisible;
+    if (ImGui::IsKeyPressed(g_healthBarConfig.menuToggleKey.key, false))
+    {
+        menuVisible = !menuVisible;
+        hideAt = 0;
+    }
+    else if (hideAt && ImGui::GetTime() >= hideAt)
+    {
+        menuVisible = false;
+        hideAt = 0;
+    }
+    if (!menuVisible)
+    {
+        if (wasVisible) ImGui::ClosePopupsOverWindow(nullptr, false);
+        return;
+    }
 
+    static bool m_ui_option_transparent = false;
     if (m_ui_option_transparent)
     {
         auto& style = ImGui::GetStyle();
-        if (m_is_ui_focused)
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_AnyWindow))
         {
             style.Alpha = 1.0f;
         }
@@ -410,13 +435,34 @@ void ormenos::show_config_window()
     ImGui::SetNextWindowPos(ImVec2(fontSize * 2, fontSize * 2), ImGuiCond_::ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(fontSize * 32, fontSize * 40), ImGuiCond_::ImGuiCond_FirstUseEver);
 
-    bool is_open = true;
-    ImGui::Begin("TQ Healthbars", &is_open);
+    ImGui::Begin("TQ Healthbars", &menuVisible);
+    ImGui::Text("Press %s to show or hide the menu.", g_healthBarConfig.menuToggleKey.name);
+    if (hideAt)
+        ImGui::Text("This menu will hide automatically in %.0f seconds.", std::ceil(hideAt - ImGui::GetTime()));
 
-    ImGui::Text("Default Menu Key: Insert");
+    if (ImGui::BeginCombo("Menu toggle key", g_healthBarConfig.menuToggleKey.name))
+    {
+        for (const auto& key : menuKeys)
+            if (ImGui::Selectable(key.name, key.key == g_healthBarConfig.menuToggleKey.key))
+            {
+                g_healthBarConfig.menuToggleKey = key;
+                g_healthBarConfig.save();
+            }
+        ImGui::EndCombo();
+    }
     ImGui::Checkbox("Transparency", &m_ui_option_transparent);
 
-    if (ImGui::CollapsingHeader("Enemy Highlights", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Movement"))
+    {
+        ImGui::BeginDisabled(!wasdMovementAvailable);
+        if (ImGui::Checkbox("WASD Movement", &g_healthBarConfig.wasdMovementEnabled))
+            g_healthBarConfig.save();
+        ImGui::EndDisabled();
+        if (!wasdMovementAvailable)
+            ImGui::TextDisabled("WASD movement is unavailable on this build.");
+    }
+
+    if (ImGui::CollapsingHeader("Enemy Highlights"))
     {
         bool changed = ImGui::Checkbox("Enable Hit Flashes", &g_healthBarConfig.hitFlashesEnabled);
         changed |= ImGui::SliderInt("Flash Duration (ms)", &g_healthBarConfig.hitFlashDurationMs, 10, 1000,
@@ -433,7 +479,7 @@ void ormenos::show_config_window()
         }
     }
 
-    if (ImGui::CollapsingHeader("Loot", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Loot"))
     {
         bool changed = ImGui::Checkbox("Autoloot Nearby Gold", &g_healthBarConfig.goldAutolootEnabled);
         changed |= ImGui::Checkbox("Autoloot Potions", &g_healthBarConfig.potionAutolootEnabled);
@@ -456,13 +502,13 @@ void ormenos::show_config_window()
             g_healthBarConfig.save();
     }
 
-    if (ImGui::CollapsingHeader("Damage Numbers", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Damage Numbers"))
     {
         if (ImGui::Checkbox("Animate Damage Numbers", &g_healthBarConfig.animatedDamageNumbersEnabled))
             g_healthBarConfig.save();
     }
 
-    if (ImGui::CollapsingHeader("Health Bar Config", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Health Bar Config"))
     {
         bool configChanged = false;
         configChanged |= ImGui::Checkbox("Show on Full Health Enemies", &g_healthBarConfig.showFullHealthEnemies);
@@ -565,14 +611,5 @@ void ormenos::show_config_window()
 
     ImGui::End();
 
-    if (!is_open)
-    {
-        bool prev_state = m_draw_ui;
-        m_draw_ui = is_open;
-    }
-    else if (m_draw_ui != m_last_draw_ui)
-    {
-        bool prev_state = m_draw_ui;
-        m_draw_ui = true;
-    }
+    if (!menuVisible) hideAt = 0;
 }

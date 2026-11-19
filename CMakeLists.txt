@@ -18,8 +18,11 @@ add_library(Ormenos SHARED
     src/hit_flash.cpp
     src/damage_numbers.cpp
     src/gold_autoloot.cpp
+    src/wasd_movement.cpp
+    src/gameplay_bindings.cpp
     src/loot_notifications.cpp
     src/inventory_glow.cpp
+    src/menu_input.cpp
     src/shared.cpp
 )
 
@@ -45,3 +48,6 @@ target_link_libraries(gold_autoloot_test PRIVATE minhook)
 add_executable(inventory_glow_test EXCLUDE_FROM_ALL tests/inventory_glow_test.cpp src/health_bar_config.cpp)
 target_include_directories(inventory_glow_test PRIVATE vendor/minhook/include)
 target_link_libraries(inventory_glow_test PRIVATE minhook)
+
+add_executable(menu_test EXCLUDE_FROM_ALL tests/menu_test.cpp src/shared.cpp src/health_bar_config.cpp
+    vendor/imgui/imgui.cpp vendor/imgui/imgui_draw.cpp vendor/imgui/imgui_tables.cpp vendor/imgui/imgui_widgets.cpp)

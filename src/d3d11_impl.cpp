@@ -9,8 +9,10 @@
 #include "hit_flash.h"
 #include "damage_numbers.h"
 #include "gold_autoloot.h"
+#include "wasd_movement.h"
 #include "loot_notifications.h"
 #include "inventory_glow.h"
+#include "menu_input.h"
 #include <cassert>
 #include <cstring>
 #include <d3d11.h>
@@ -35,7 +37,9 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 LRESULT CALLBACK hkWindowProc(_In_ HWND hwnd, _In_ UINT uMsg, _In_ WPARAM wParam, _In_ LPARAM lParam)
 {
-    if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam) > 0) return 1L;
+    const auto handled = ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam);
+    if (ormenos::consume_menu_mouse_message(hwnd, uMsg, wParam, lParam)) return 1L;
+    if (handled) return handled;
     return ::CallWindowProcA(oWndProc, hwnd, uMsg, wParam, lParam);
 }
 
@@ -236,6 +240,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ormenos::initialize_hit_flashes(device, context);
         ormenos::initialize_damage_numbers();
         ormenos::initialize_gold_autoloot();
+        ormenos::initialize_wasd_movement(hwnd);
         ormenos::initialize_inventory_glow();
 
         ormenos::state::fnWorldCameraProject =
@@ -336,6 +341,8 @@ static void RenderConfigWindow()
     ormenos::show_config_window();
 
     ImGui::Render();
+    if (!imguiFrameReady)
+        ormenos::register_menu_input(ormenos::state::g_pEngine);
     imguiFrameReady = true;
 
     ID3D11Texture2D* backBuffer = nullptr;

@@ -6,13 +6,13 @@
 #include "GameTextClass.hpp"
 #include "ItemClassification.hpp"
 namespace GAME {
-struct WorldCoords;
-}
-namespace GAME {
 struct GameUiInterface;
 }
 namespace GAME {
 struct ItemTextClassNode;
+}
+namespace GAME {
+struct LoadTable;
 }
 namespace GAME {
 struct TextStyleNode;
@@ -21,7 +21,7 @@ namespace GAME {
 struct Player;
 }
 namespace GAME {
-struct LoadTable;
+struct WorldCoords;
 }
 namespace GAME {
 #pragma pack(push, 1)
@@ -52,6 +52,8 @@ struct GameEngine {
     private: char pad_28e9[0x1a5]; public:
     bool debugRendering2; // 0x2a8e
     bool debugRendering; // 0x2a8f
+    bool IsGameLoading();
+    bool IsGameWaiting();
     GAME::Player* GetMainPlayer();
     GAME::GameTextClass GetItemTextClass(GAME::ItemClassification classification);
     GAME::GameString GetGameTextStyleName(GAME::GameTextClass textClass);

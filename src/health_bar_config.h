@@ -6,6 +6,19 @@
 #include "../vendor/imgui/imgui.h"
 
 namespace ormenos {
+struct MenuKey
+{
+    const char* name;
+    ImGuiKey key;
+};
+
+inline constexpr MenuKey menuKeys[] = {
+    {"Insert", ImGuiKey_Insert}, {"Home", ImGuiKey_Home}, {"End", ImGuiKey_End}, {"Delete", ImGuiKey_Delete},
+    {"F1", ImGuiKey_F1}, {"F2", ImGuiKey_F2}, {"F3", ImGuiKey_F3}, {"F4", ImGuiKey_F4},
+    {"F5", ImGuiKey_F5}, {"F6", ImGuiKey_F6}, {"F7", ImGuiKey_F7}, {"F8", ImGuiKey_F8},
+    {"F9", ImGuiKey_F9}, {"F10", ImGuiKey_F10}, {"F11", ImGuiKey_F11}, {"F12", ImGuiKey_F12}
+};
+
 class HealthBarConfig
 {
 public:
@@ -18,6 +31,8 @@ public:
     void initialize();
     void save();
 
+    MenuKey menuToggleKey = menuKeys[0];
+    bool wasdMovementEnabled = false;
     bool showFullHealthEnemies = true;
     bool showHealthBarForPlayers = true;
     bool showHealthBarForMonsters = true;

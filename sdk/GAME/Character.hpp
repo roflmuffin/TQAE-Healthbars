@@ -9,14 +9,15 @@
 #include "LifeState.hpp"
 #include "SkillManager.hpp"
 #include "Team.hpp"
+#include "WorldVec3.hpp"
+namespace GAME {
+struct Color;
+}
 namespace GAME {
 struct RTTI_ClassInfo;
 }
 namespace GAME {
 struct Entity;
-}
-namespace GAME {
-struct Color;
 }
 namespace GAME {
 struct ParametersCombat;
@@ -63,6 +64,8 @@ struct Character : public Actor {
     private: char pad_1202[0xc82]; public:
     GAME::GameString portraitName; // 0x1e84
     private: char pad_1e9c[0x7c]; public:
+    GAME::WorldVec3 GetPathPosition();
+    bool IsTeleporting();
     bool TakeAttack(GAME::ParametersCombat* parameters);
     uint32_t GetControllerId();
     virtual GAME::RTTI_ClassInfo* GetRTTIClassInfo() = 0;

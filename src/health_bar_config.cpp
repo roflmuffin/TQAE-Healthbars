@@ -65,6 +65,11 @@ int ColorComponent(float component) { return std::clamp(static_cast<int>(std::lr
 
 void LoadHealthBarConfig(const toml::table& table, ormenos::HealthBarConfig& config)
 {
+    const auto keyName = table["menu_toggle_key"].value<std::string_view>();
+    for (const auto& key : ormenos::menuKeys)
+        if (keyName == key.name)
+            config.menuToggleKey = key;
+    config.wasdMovementEnabled = table["wasd_movement_enabled"].value_or(config.wasdMovementEnabled);
     config.showFullHealthEnemies = table["show_full_health_enemies"].value_or(config.showFullHealthEnemies);
     config.showHealthBarForPlayers = table["show_health_bar_for_players"].value_or(config.showHealthBarForPlayers);
     config.showHealthBarForMonsters = table["show_health_bar_for_monsters"].value_or(config.showHealthBarForMonsters);
@@ -126,6 +131,8 @@ void UpdateConfigDocument(toml::table& document, const ormenos::HealthBarConfig&
         table = document[kHealthBarTableName].as_table();
     }
 
+    table->insert_or_assign("menu_toggle_key", config.menuToggleKey.name);
+    table->insert_or_assign("wasd_movement_enabled", config.wasdMovementEnabled);
     table->insert_or_assign("show_full_health_enemies", config.showFullHealthEnemies);
     table->insert_or_assign("show_health_bar_for_players", config.showHealthBarForPlayers);
     table->insert_or_assign("show_health_bar_for_monsters", config.showHealthBarForMonsters);
