@@ -50,6 +50,7 @@ public:
     int newItemGlowSizePx = 3;
     int autolootDelayMs = 750;
     int autolootRange = 10;
+    bool showMinimapEnemies = true;
     bool hitFlashesEnabled = true;
     int hitFlashDurationMs = 150;
     bool redHoverRimEnabled = true;

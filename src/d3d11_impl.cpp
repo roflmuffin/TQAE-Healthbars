@@ -13,6 +13,9 @@
 #include "loot_notifications.h"
 #include "inventory_glow.h"
 #include "menu_input.h"
+#include "minimap.h"
+#include "../sdk/GAME/UIDetailMapWidget.hpp"
+#include "../sdk/GAME/GameplayFunctionRva.hpp"
 #include <cassert>
 #include <cstring>
 #include <d3d11.h>
@@ -113,15 +116,17 @@ static constexpr uintptr_t kGameplayUiReturnRva = 0x56a58;
 static uintptr_t exeBase = 0;
 static bool imguiFrameReady = false;
 
-static void RenderHealthBarsBeforeUi()
+template<class Draw>
+static void RenderOverlay(Draw drawContent)
 {
     ImDrawList draw(ImGui::GetDrawListSharedData());
     draw._ResetForNewFrame();
     draw.PushTexture(ImGui::GetIO().Fonts->TexRef);
     draw.PushClipRect(ImVec2(0, 0), ImGui::GetIO().DisplaySize);
-    ormenos::render_health_bars(draw);
+    drawContent(draw);
     draw.PopClipRect();
     draw.PopTexture();
+    if (draw.VtxBuffer.empty()) return;
 
     ImDrawData data;
     data.Valid = true;
@@ -133,6 +138,16 @@ static void RenderHealthBarsBeforeUi()
     ImGui_ImplDX11_RenderDrawData(&data);
 }
 
+using DrawCompassIcons = void(__thiscall*)(UIDetailMapWidget*, GraphicsCanvas*, Vec2*);
+static DrawCompassIcons originalDrawCompassIcons = nullptr;
+
+static void __fastcall hkDrawCompassIcons(UIDetailMapWidget* map, void*, GraphicsCanvas* canvas, Vec2* origin)
+{
+    if (imguiFrameReady && ormenos::g_healthBarConfig.showMinimapEnemies)
+        RenderOverlay([&](ImDrawList& draw) { ormenos::render_minimap_enemies(draw, map, *origin); });
+    originalDrawCompassIcons(map, canvas, origin);
+}
+
 static void __fastcall hkSetDefaultState(GraphicsCanvas* canvas, void* edx)
 {
     oSetDefaultState(canvas);
@@ -140,7 +155,7 @@ static void __fastcall hkSetDefaultState(GraphicsCanvas* canvas, void* edx)
     if (reinterpret_cast<uintptr_t>(_ReturnAddress()) == exeBase + kGameplayUiReturnRva)
     {
         if (imguiFrameReady && canvas != nullptr && !ormenos::state::allCharacters.empty())
-            RenderHealthBarsBeforeUi();
+            RenderOverlay(ormenos::render_health_bars);
         ormenos::render_loot_notifications(canvas);
     }
 }
@@ -289,6 +304,15 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         }
 
         exeBase = reinterpret_cast<uintptr_t>(::GetModuleHandleW(nullptr));
+        const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exeBase);
+        const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS*>(exeBase + dos->e_lfanew);
+        if (nt->FileHeader.TimeDateStamp == 0x62daa02a && nt->OptionalHeader.SizeOfImage == 0x36a000)
+        {
+            auto* target = reinterpret_cast<void*>(exeBase + static_cast<uintptr_t>(GameplayFunctionRva::DrawCompassIcons));
+            if (MH_CreateHook(target, &hkDrawCompassIcons, reinterpret_cast<void**>(&originalDrawCompassIcons)) != MH_OK ||
+                MH_EnableHook(target) != MH_OK)
+                OutputDebugStringA("Minimap enemy markers disabled: compass hook installation failed\n");
+        }
         auto* stateTarget = reinterpret_cast<void*>(
             mem::modexport<"Engine.dll", "?SetDefaultState@GraphicsCanvas@GAME@@QAEXXZ">());
         // shortcut: this return RVA matches this TQ.exe build; recheck the scene/UI boundary for other versions.

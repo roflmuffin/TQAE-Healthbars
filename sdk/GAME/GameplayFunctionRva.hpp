@@ -9,6 +9,7 @@ enum class GameplayFunctionRva : uint32_t {
     HandleKeyEvent = 362304,
     SkillInProgress = 367120,
     HandleMouseEvent = 371280,
+    DrawCompassIcons = 957856,
     HasOpenWindow = 1279440,
 };
 #pragma pack(pop)

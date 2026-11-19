@@ -1,6 +1,13 @@
 #pragma once
 #include <cstdint>
 #include "Coords.hpp"
+#include "Vec2.hpp"
+namespace GAME {
+struct Vec3;
+}
+namespace GAME {
+struct Viewport;
+}
 namespace GAME {
 #pragma pack(push, 1)
 struct Camera {
@@ -9,6 +16,7 @@ struct Camera {
     private: char pad_34[0xc]; public:
     float nearPlane; // 0x40
     float farPlane; // 0x44
+    GAME::Vec2 Project(GAME::Vec3* position, GAME::Viewport* viewport);
 }; // Size: 0x48
 #pragma pack(pop)
 }

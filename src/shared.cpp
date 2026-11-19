@@ -464,7 +464,8 @@ void ormenos::show_config_window()
 
     if (ImGui::CollapsingHeader("Enemy Highlights"))
     {
-        bool changed = ImGui::Checkbox("Enable Hit Flashes", &g_healthBarConfig.hitFlashesEnabled);
+        bool changed = ImGui::Checkbox("Show Enemies on Minimap", &g_healthBarConfig.showMinimapEnemies);
+        changed |= ImGui::Checkbox("Enable Hit Flashes", &g_healthBarConfig.hitFlashesEnabled);
         changed |= ImGui::SliderInt("Flash Duration (ms)", &g_healthBarConfig.hitFlashDurationMs, 10, 1000,
                                     "%d ms", ImGuiSliderFlags_AlwaysClamp);
         changed |= ImGui::Checkbox("Red Hover Rim (Prototype)", &g_healthBarConfig.redHoverRimEnabled);

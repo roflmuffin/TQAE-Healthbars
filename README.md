@@ -11,6 +11,7 @@ Ormenos brings modern ARPG style floating health bars to Titan Quest: Anniversar
 - Floating health bars over players, monsters and summons
 - Rarity-aware bars (Normal / Champion / Hero / Boss / Quest) with coloured NPC names
 - Optional WASD movement with mouse attack priority
+- Show enemies on the minimap
 - Modern "delayed damage" damage animation
 - Tweaked damage number animations
 - White enemy hitflashes with configurable intensity

@@ -3,6 +3,10 @@
 namespace GAME {
 #pragma pack(push, 1)
 enum class GameplayImportRva : uint32_t {
+    CameraProject = 2019568,
+    GetRelativePosition = 2021120,
+    GetEntitiesInFrustum = 2021228,
+    IsFoe = 2023876,
     ObjectManagerGet = 2019868,
     IsGameTimePaused = 2020296,
     PutOnFloor = 2020952,

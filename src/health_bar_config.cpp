@@ -92,6 +92,7 @@ void LoadHealthBarConfig(const toml::table& table, ormenos::HealthBarConfig& con
         table["autoloot_delay_ms"].value_or<int64_t>(config.autolootDelayMs), int64_t{0}, int64_t{3000}));
     config.autolootRange = static_cast<int>(std::clamp(
         table["autoloot_range"].value_or<int64_t>(config.autolootRange), int64_t{1}, int64_t{30}));
+    config.showMinimapEnemies = table["show_minimap_enemies"].value_or(config.showMinimapEnemies);
     config.hitFlashesEnabled = table["hit_flashes_enabled"].value_or(config.hitFlashesEnabled);
     config.redHoverRimEnabled = table["red_hover_rim_enabled"].value_or(config.redHoverRimEnabled);
     config.hoverRimWidth = static_cast<int>(std::clamp(
@@ -153,6 +154,7 @@ void UpdateConfigDocument(toml::table& document, const ormenos::HealthBarConfig&
     table->insert_or_assign("new_item_glow_size_px", config.newItemGlowSizePx);
     table->insert_or_assign("autoloot_delay_ms", config.autolootDelayMs);
     table->insert_or_assign("autoloot_range", config.autolootRange);
+    table->insert_or_assign("show_minimap_enemies", config.showMinimapEnemies);
     table->insert_or_assign("hit_flashes_enabled", config.hitFlashesEnabled);
     table->insert_or_assign("red_hover_rim_enabled", config.redHoverRimEnabled);
     table->insert_or_assign("hover_rim_width", config.hoverRimWidth);

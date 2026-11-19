@@ -28,6 +28,7 @@ int main()
     auto& config = ormenos::g_healthBarConfig;
     config.initialize();
     assert(config.menuToggleKey.key == ImGuiKey_Insert && config.opacity == 123);
+    assert(config.showMinimapEnemies);
 
     ImGui::CreateContext();
     auto& io = ImGui::GetIO();
@@ -89,9 +90,12 @@ int main()
     assert(popup && popup->Active);
     click(popup->DC.CursorStartPos + ImVec2(8, row + 4));
     assert(config.menuToggleKey.key == ImGuiKey_Home);
+    config.showMinimapEnemies = false;
+    config.save();
     ormenos::HealthBarConfig reloaded;
     reloaded.initialize();
     assert(reloaded.menuToggleKey.key == ImGuiKey_Home && reloaded.opacity == 123);
+    assert(!reloaded.showMinimapEnemies);
 
     io.AddKeyEvent(ImGuiKey_Insert, true);
     frame();

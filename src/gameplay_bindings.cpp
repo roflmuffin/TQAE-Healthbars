@@ -1,4 +1,6 @@
 #include "../sdk/GAME/Character.hpp"
+#include "../sdk/GAME/World.hpp"
+#include "../sdk/GAME/Region.hpp"
 #include "../sdk/GAME/ControllerPlayer.hpp"
 #include "../sdk/GAME/GameEngine.hpp"
 #include "../sdk/GAME/GameplayFunctionRva.hpp"
@@ -45,6 +47,27 @@ bool GameEngine::IsGameWaiting() { return call_method<bool>(GameplayImportRva::I
 Player* GameEngine::GetMainPlayer() { return call_method<Player*>(GameplayImportRva::GetMainPlayer, this); }
 bool Character::IsTeleporting() { return call_method<bool>(GameplayImportRva::IsTeleporting, this); }
 bool WorldVec3::PutOnFloor() { return call_method<bool>(GameplayImportRva::PutOnFloor, this); }
+
+bool Team::IsFoe(Team* other) { return call_method<bool>(GameplayImportRva::IsFoe, this, other); }
+
+void World::GetEntitiesInFrustum(EntityList* entities, WorldFrustum* frustum, bool flag, int listType, bool loaded, bool recurse)
+{
+    call_method<void>(GameplayImportRva::GetEntitiesInFrustum, this, entities, frustum, flag, listType, loaded, recurse);
+}
+
+Vec3 Region::GetRelativePosition(WorldVec3* location)
+{
+    Vec3 result;
+    call_method<Vec3*>(GameplayImportRva::GetRelativePosition, this, &result, location);
+    return result;
+}
+
+Vec2 Camera::Project(Vec3* position, Viewport* viewport)
+{
+    Vec2 result;
+    call_method<Vec2*>(GameplayImportRva::CameraProject, this, &result, position, viewport);
+    return result;
+}
 
 WorldVec3 Character::GetPathPosition()
 {

@@ -22,6 +22,7 @@ add_library(Ormenos SHARED
     src/gameplay_bindings.cpp
     src/loot_notifications.cpp
     src/inventory_glow.cpp
+    src/minimap.cpp
     src/menu_input.cpp
     src/shared.cpp
 )

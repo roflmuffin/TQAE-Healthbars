@@ -29,7 +29,19 @@ struct GameWideString 0x18 {
     uint32_t capacity @ 0x14;
 }
 
+struct Entity {}
+struct WorldFrustum {}
+struct Region {}
+
+struct EntityList {
+    Entity** begin;
+    Entity** end;
+    Entity** capacityEnd;
+}
+
 struct World {
+    void GetEntitiesInFrustum(EntityList* entities, WorldFrustum* frustum, bool flag, int listType, bool loaded, bool recurse);
+    bool AreRegionsConnected(Region* first, Region* second, int depth);
     bool debugEnabled @ 0x8;
     GameString fileName @ 0x10;
 }
@@ -75,7 +87,10 @@ struct ABBox {
     float 	zmax
 }
 
+struct WorldVec3 {}
+
 struct Region {
+    Vec3 GetRelativePosition(WorldVec3* location);
     World* world @ 0x24;
     IntVec3 worldOffset @ 0x2c;
     GameString name @ 0x38;
@@ -517,10 +532,21 @@ struct Mat4 {
 }
 
 struct Camera {
+    Vec2 Project(Vec3* position, Viewport* viewport);
     void* vft;
     Coords coords;
     float nearPlane @ 0x40;
     float farPlane @ 0x44;
+}
+
+struct UIDetailMapWidget {
+    Camera camera @ 0x1e8;
+    Region* region @ 0x234;
+    Viewport viewport @ 0x238;
+    WorldFrustum frustum @ 0x678;
+    Vec2 size @ 0xae4;
+    Vec2 offset @ 0xaf8;
+    void DrawCompassIcons(GraphicsCanvas* canvas, Vec2* origin); // TQ.exe RVA 0xe9da0
 }
 
 struct SystemTimer {
@@ -788,6 +814,10 @@ struct GameplayInput {
 
 // TQ.exe import address table slots for the native gameplay calls.
 enum class GameplayImportRva : uint32_t {
+    CameraProject = 0x1ed0f0,
+    GetRelativePosition = 0x1ed700,
+    GetEntitiesInFrustum = 0x1ed76c,
+    IsFoe = 0x1ee1c4,
     ObjectManagerGet = 0x1ed21c,
     IsGameTimePaused = 0x1ed3c8,
     PutOnFloor = 0x1ed658,
@@ -809,6 +839,7 @@ enum class GameplayFunctionRva : uint32_t {
     HandleKeyEvent = 0x58740,
     SkillInProgress = 0x59a10,
     HandleMouseEvent = 0x5aa50,
+    DrawCompassIcons = 0xe9da0,
     HasOpenWindow = 0x1385d0,
 }
 
