@@ -1,6 +1,7 @@
 #pragma once
+#include <cstdint>
+#include "ABBox.hpp"
 #include "Resource.hpp"
-#include "Vec3.hpp"
 namespace GAME {
 #pragma pack(push, 1)
 struct GraphicsMesh : public Resource {
@@ -13,7 +14,7 @@ struct GraphicsMesh : public Resource {
     private: char pad_a4[0x4]; public:
     uint32_t numBones; // 0xa8
     private: char pad_ac[0x1c]; public:
-    GAME::Vec3 centerOfMass; // 0xc8
-}; // Size: 0xd4
+    GAME::ABBox boundingBox; // 0xc8
+}; // Size: 0xe0
 #pragma pack(pop)
 }

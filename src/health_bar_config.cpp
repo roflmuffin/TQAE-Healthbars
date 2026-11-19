@@ -55,7 +55,7 @@ void ReadColor(const toml::node* node, ImColor& color)
         {
             return;
         }
-        components[index] = std::clamp(static_cast<int>(*component), 0, 255);
+        components[index] = static_cast<int>(std::clamp(*component, int64_t{0}, int64_t{255}));
     }
 
     color = ImColor(components[0], components[1], components[2], components[3]);
@@ -74,6 +74,27 @@ void LoadHealthBarConfig(const toml::table& table, ormenos::HealthBarConfig& con
         table["show_health_amount_text_for_monsters"].value_or(config.showHealthAmountTextForMonsters);
     config.showMinionHealthBars = table["show_minion_health_bars"].value_or(config.showMinionHealthBars);
     config.showDebugText = table["show_debug_text"].value_or(config.showDebugText);
+    config.animatedDamageNumbersEnabled = table["animated_damage_numbers_enabled"].value_or(config.animatedDamageNumbersEnabled);
+    config.goldAutolootEnabled = table["gold_autoloot_enabled"].value_or(config.goldAutolootEnabled);
+    config.potionAutolootEnabled = table["potion_autoloot_enabled"].value_or(config.potionAutolootEnabled);
+    config.relicAutolootEnabled = table["relic_autoloot_enabled"].value_or(config.relicAutolootEnabled);
+    config.charmAutolootEnabled = table["charm_autoloot_enabled"].value_or(config.charmAutolootEnabled);
+    config.newItemGlowEnabled = table["new_item_glow_enabled"].value_or(config.newItemGlowEnabled);
+    ReadColor(table.get("new_item_glow_color"), config.newItemGlowColor);
+    config.newItemGlowSizePx = static_cast<int>(std::clamp(
+        table["new_item_glow_size_px"].value_or<int64_t>(config.newItemGlowSizePx), int64_t{1}, int64_t{10}));
+    config.autolootDelayMs = static_cast<int>(std::clamp(
+        table["autoloot_delay_ms"].value_or<int64_t>(config.autolootDelayMs), int64_t{0}, int64_t{3000}));
+    config.autolootRange = static_cast<int>(std::clamp(
+        table["autoloot_range"].value_or<int64_t>(config.autolootRange), int64_t{1}, int64_t{30}));
+    config.hitFlashesEnabled = table["hit_flashes_enabled"].value_or(config.hitFlashesEnabled);
+    config.redHoverRimEnabled = table["red_hover_rim_enabled"].value_or(config.redHoverRimEnabled);
+    config.hoverRimWidth = static_cast<int>(std::clamp(
+        table["hover_rim_width"].value_or<int64_t>(config.hoverRimWidth), int64_t{10}, int64_t{90}));
+    config.hoverRimOpacity = static_cast<int>(std::clamp(
+        table["hover_rim_opacity"].value_or<int64_t>(config.hoverRimOpacity), int64_t{0}, int64_t{100}));
+    config.hitFlashDurationMs = static_cast<int>(std::clamp(
+        table["hit_flash_duration_ms"].value_or<int64_t>(config.hitFlashDurationMs), int64_t{10}, int64_t{1000}));
 
     ReadSize(table.get("size"), config.size);
     config.trailingBarDelaySeconds =
@@ -112,6 +133,24 @@ void UpdateConfigDocument(toml::table& document, const ormenos::HealthBarConfig&
     table->insert_or_assign("show_health_amount_text_for_monsters", config.showHealthAmountTextForMonsters);
     table->insert_or_assign("show_minion_health_bars", config.showMinionHealthBars);
     table->insert_or_assign("show_debug_text", config.showDebugText);
+    table->insert_or_assign("animated_damage_numbers_enabled", config.animatedDamageNumbersEnabled);
+    table->insert_or_assign("gold_autoloot_enabled", config.goldAutolootEnabled);
+    table->insert_or_assign("potion_autoloot_enabled", config.potionAutolootEnabled);
+    table->insert_or_assign("relic_autoloot_enabled", config.relicAutolootEnabled);
+    table->insert_or_assign("charm_autoloot_enabled", config.charmAutolootEnabled);
+    table->insert_or_assign("new_item_glow_enabled", config.newItemGlowEnabled);
+    table->insert_or_assign("new_item_glow_color", toml::array{ ColorComponent(config.newItemGlowColor.Value.x),
+                                                              ColorComponent(config.newItemGlowColor.Value.y),
+                                                              ColorComponent(config.newItemGlowColor.Value.z),
+                                                              ColorComponent(config.newItemGlowColor.Value.w) });
+    table->insert_or_assign("new_item_glow_size_px", config.newItemGlowSizePx);
+    table->insert_or_assign("autoloot_delay_ms", config.autolootDelayMs);
+    table->insert_or_assign("autoloot_range", config.autolootRange);
+    table->insert_or_assign("hit_flashes_enabled", config.hitFlashesEnabled);
+    table->insert_or_assign("red_hover_rim_enabled", config.redHoverRimEnabled);
+    table->insert_or_assign("hover_rim_width", config.hoverRimWidth);
+    table->insert_or_assign("hover_rim_opacity", config.hoverRimOpacity);
+    table->insert_or_assign("hit_flash_duration_ms", config.hitFlashDurationMs);
     table->insert_or_assign("size", toml::array{ config.size.x, config.size.y });
     table->insert_or_assign("trailing_bar_delay_seconds", config.trailingBarDelaySeconds);
     table->insert_or_assign("trailing_bar_ease_speed", config.trailingBarEaseSpeed);

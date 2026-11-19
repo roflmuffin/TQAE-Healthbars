@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "Vec3.hpp"
 namespace GAME {
 struct Region;

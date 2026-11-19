@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 namespace GAME {
 #pragma pack(push, 1)
 enum TeamMinor : uint32_t {

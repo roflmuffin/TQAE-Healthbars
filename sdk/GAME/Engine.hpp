@@ -1,11 +1,12 @@
 #pragma once
+#include <cstdint>
 #include "GameInfo.hpp"
 #include "WorldFrustum.hpp"
 namespace GAME {
-struct World;
+struct GraphicsEngine;
 }
 namespace GAME {
-struct GraphicsEngine;
+struct World;
 }
 namespace GAME {
 struct PhysicsEngine;
@@ -40,7 +41,9 @@ struct Engine {
     private: char pad_3e8[0x8]; public:
     uint32_t frameCount; // 0x3f0
     bool enableLog; // 0x3f4
-    private: char pad_3f5[0x4f4]; public:
+    private: char pad_3f5[0xaf]; public:
+    GAME::WorldFrustum priorFrameFrustum; // 0x4a4
+    private: char pad_8ac[0x3d]; public:
     bool teleportMode; // 0x8e9
     private: char pad_8ea[0x56]; public:
     float uiScale; // 0x940

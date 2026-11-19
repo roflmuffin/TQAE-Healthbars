@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "Display.hpp"
 namespace GAME {
 struct GraphicsCanvas;
@@ -20,7 +21,8 @@ struct GraphicsEngine {
     bool enableBoundingBoxes; // 0xc5
     private: char pad_c6[0x1]; public:
     bool enableWireframe; // 0xc7
-    private: char pad_c8[0x2]; public:
+    bool enableStats; // 0xc8
+    private: char pad_c9[0x1]; public:
     bool enableFrameRateDisplay; // 0xca
     bool enableShadows; // 0xcb
     bool enableLighting; // 0xcc

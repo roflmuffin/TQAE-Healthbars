@@ -6,6 +6,7 @@
 
 #if KIERO_INCLUDE_D3D11
 #include "d3d11_impl.h"
+#include "hit_flash.h"
 #endif
 
 #if !KIERO_USE_MINHOOK
@@ -36,7 +37,7 @@ int initialize()
 }
 } // namespace
 
-extern BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID)
+extern BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID reserved)
 {
     switch (fdwReason)
     {
@@ -44,6 +45,11 @@ extern BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD fdwReason, LPVOID)
             DisableThreadLibraryCalls(hInstance);
             CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)initialize, nullptr, 0, nullptr);
             break;
+#if KIERO_INCLUDE_D3D11
+        case DLL_PROCESS_DETACH:
+            if (reserved) ormenos::detach_hit_flash_resources_on_process_exit();
+            break;
+#endif
         default:
             break;
     }

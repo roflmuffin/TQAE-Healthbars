@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "ABBox.hpp"
 namespace GAME {
 #pragma pack(push, 1)

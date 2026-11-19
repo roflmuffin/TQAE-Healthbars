@@ -2,10 +2,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include "shared.h"
+#include "game_string.h"
 #include <algorithm>
 #include <cfloat>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <unordered_map>
 
@@ -13,11 +15,13 @@
 #include "../sdk/GAME/GraphicsMesh.hpp"
 #include "../sdk/GAME/GraphicsMeshInstance.hpp"
 #include "../sdk/GAME/Monster.hpp"
+#include "../sdk/GAME/RTTI_ClassInfo.hpp"
 #include "../sdk/GAME/Player.hpp"
 #include "../vendor/imgui/imgui.h"
 #include "../vendor/imgui/imgui_internal.h"
 #include "d3d11_impl.h"
 #include "health_bar_config.h"
+#include "hit_flash.h"
 
 static int opacity = 255;
 
@@ -45,6 +49,12 @@ std::unordered_map<MonsterClassification, ImColor> g_monsterClassificationColors
     { MonsterClassification::Quest, ImColor(204, 160, 215, 255) }
 };
 
+Monster* as_monster(Character* character)
+{
+    for (const auto* type = character->GetRTTIClassInfo(); type; type = type->parent)
+        if (type->name && std::strcmp(type->name, "Monster") == 0) return static_cast<Monster*>(character);
+    return nullptr;
+}
 } // namespace
 
 static void RenderPointerRow(const char* name, const void* pointer)
@@ -78,7 +88,6 @@ static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 p
 
     float health = character->bio.currentLife;
     float maxHealth = character->bio.maxLife;
-    auto* monster = reinterpret_cast<Monster*>(character);
     auto borderThickness = 1.0f * scaleFactor;
 
     auto* player = ormenos::state::g_pGameCamera ? ormenos::state::g_pGameCamera->player : nullptr;
@@ -98,7 +107,9 @@ static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 p
         return;
     }
 
-    switch (monster->classification)
+    const auto* monster = as_monster(character);
+    const auto classification = monster ? monster->classification : MonsterClassification::Normal;
+    switch (classification)
     {
         case MonsterClassification::Champion:
             size.x *= 1.5f;
@@ -238,13 +249,12 @@ static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 p
         }
     }
 
-    if (isMonster)
+    if (isMonster && monster)
     {
-        auto* monster = reinterpret_cast<Monster*>(character);
-        if (static_cast<uint32_t>(monster->classification) > 0 || character->graphicsMeshInstance->highlight)
+        if (classification != MonsterClassification::Normal || character->highlightEnabled)
         {
             std::wstring description;
-            const char* descriptionTag = character->descriptionTag.c_str();
+            const char* descriptionTag = GAME::string_data(character->descriptionTag);
             if (descriptionTag && *descriptionTag)
             {
                 description = std::wstring(ormenos::state::fnLocalizationGetText(ormenos::state::g_pLocalizationManager, descriptionTag));
@@ -258,8 +268,8 @@ static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 p
             draw->AddText(font, healthBarFontSize, ImVec2(textPos2.x + shadowOffset.x, textPos2.y + shadowOffset.y),
                           IM_COL32(0, 0, 0, g_healthBarConfig.opacity), text2);
 
-            g_monsterClassificationColors[monster->classification].Value.w = g_healthBarConfig.opacity / 255.0f;
-            draw->AddText(font, healthBarFontSize, textPos2, g_monsterClassificationColors[monster->classification], text2);
+            g_monsterClassificationColors[classification].Value.w = g_healthBarConfig.opacity / 255.0f;
+            draw->AddText(font, healthBarFontSize, textPos2, g_monsterClassificationColors[classification], text2);
 
             runningPos.y -= textSize2.y + textPadding;
         }
@@ -268,7 +278,7 @@ static void RenderHealthBar(ImDrawList& drawList, Character* character, ImVec2 p
     if (g_healthBarConfig.showDebugText)
     {
         std::wstring description;
-        const char* descriptionTag = character->descriptionTag.c_str();
+        const char* descriptionTag = GAME::string_data(character->descriptionTag);
         if (descriptionTag && *descriptionTag)
         {
             description = std::wstring(ormenos::state::fnLocalizationGetText(ormenos::state::g_pLocalizationManager, descriptionTag));
@@ -406,6 +416,52 @@ void ormenos::show_config_window()
     ImGui::Text("Default Menu Key: Insert");
     ImGui::Checkbox("Transparency", &m_ui_option_transparent);
 
+    if (ImGui::CollapsingHeader("Enemy Highlights", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        bool changed = ImGui::Checkbox("Enable Hit Flashes", &g_healthBarConfig.hitFlashesEnabled);
+        changed |= ImGui::SliderInt("Flash Duration (ms)", &g_healthBarConfig.hitFlashDurationMs, 10, 1000,
+                                    "%d ms", ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::Checkbox("Red Hover Rim (Prototype)", &g_healthBarConfig.redHoverRimEnabled);
+        changed |= ImGui::SliderInt("Hover Rim Width", &g_healthBarConfig.hoverRimWidth, 10, 90,
+                                    "%d%%", ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::SliderInt("Hover Rim Opacity", &g_healthBarConfig.hoverRimOpacity, 0, 100,
+                                    "%d%%", ImGuiSliderFlags_AlwaysClamp);
+        if (changed)
+        {
+            ormenos::expire_hit_flashes();
+            g_healthBarConfig.save();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Loot", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        bool changed = ImGui::Checkbox("Autoloot Nearby Gold", &g_healthBarConfig.goldAutolootEnabled);
+        changed |= ImGui::Checkbox("Autoloot Potions", &g_healthBarConfig.potionAutolootEnabled);
+        changed |= ImGui::Checkbox("Autoloot Relic Shards", &g_healthBarConfig.relicAutolootEnabled);
+        changed |= ImGui::Checkbox("Autoloot Monster Charms", &g_healthBarConfig.charmAutolootEnabled);
+        changed |= ImGui::Checkbox("Highlight New Inventory Items", &g_healthBarConfig.newItemGlowEnabled);
+        ImGui::BeginDisabled(!g_healthBarConfig.newItemGlowEnabled);
+        changed |= ImGui::ColorEdit4("Highlight Colour (RGBA)", &g_healthBarConfig.newItemGlowColor.Value.x,
+                                     ImGuiColorEditFlags_AlphaBar);
+        ImGui::SetItemTooltip("Alpha controls the maximum opacity during the pulse.");
+        changed |= ImGui::SliderInt("Highlight Size (px)", &g_healthBarConfig.newItemGlowSizePx, 1, 10,
+                                    "%d px", ImGuiSliderFlags_AlwaysClamp);
+        ImGui::SetItemTooltip("Bright edge width in screen pixels. The soft fade extends inward.");
+        ImGui::EndDisabled();
+        changed |= ImGui::SliderInt("Autoloot Delay (ms)", &g_healthBarConfig.autolootDelayMs, 0, 3000,
+                                    "%d ms", ImGuiSliderFlags_AlwaysClamp);
+        changed |= ImGui::SliderInt("Autoloot Range", &g_healthBarConfig.autolootRange, 1, 30,
+                                    "%d units", ImGuiSliderFlags_AlwaysClamp);
+        if (changed)
+            g_healthBarConfig.save();
+    }
+
+    if (ImGui::CollapsingHeader("Damage Numbers", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (ImGui::Checkbox("Animate Damage Numbers", &g_healthBarConfig.animatedDamageNumbersEnabled))
+            g_healthBarConfig.save();
+    }
+
     if (ImGui::CollapsingHeader("Health Bar Config", ImGuiTreeNodeFlags_DefaultOpen))
     {
         bool configChanged = false;
@@ -451,9 +507,8 @@ void ormenos::show_config_window()
             RenderPointerRow("Game Engine Pointer", ormenos::state::g_pGameEngine);
             RenderPointerRow("Camera Pointer", ormenos::state::g_pGameCamera);
             RenderPointerRow("Localization Manager Pointer", ormenos::state::g_pLocalizationManager);
-            RenderPointerRow("Dialog Manager Pointer", ormenos::state::fnGetDialogManager
-                                                           ? ormenos::state::fnGetDialogManager(ormenos::state::g_pGameEngine)
-                                                           : nullptr);
+            auto* game = ormenos::state::g_pGameEngine;
+            RenderPointerRow("Dialog Manager Pointer", game ? &game->dialogManager : nullptr);
             RenderPointerRow("TimeScale Pointer", ormenos::state::g_pTimeScale);
             RenderPointerRow("Last Created Widget", ormenos::state::lastCreatedWidget);
             RenderPointerRow("Render Rect Solid Function", reinterpret_cast<const void*>(ormenos::state::fnRenderRectSolid));
@@ -493,7 +548,8 @@ void ormenos::show_config_window()
                     continue;
                 }
 
-                auto* monster = reinterpret_cast<Monster*>(character);
+                auto* monster = as_monster(character);
+                if (!monster) continue;
 
                 if (monster->classification == MonsterClassification::Quest)
                 {

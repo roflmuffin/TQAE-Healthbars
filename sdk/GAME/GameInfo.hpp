@@ -1,14 +1,14 @@
 #pragma once
+#include <cstdint>
+#include "GameString.hpp"
 namespace GAME {
 #pragma pack(push, 1)
 struct GameInfo {
     private: char pad_0[0x10]; public:
     // Metadata: utf8*
-    char* name; // 0x10
-    private: char pad_14[0x24]; public:
-    // Metadata: utf8*
-    char* levelName; // 0x38
-    private: char pad_3c[0xe0]; public:
+    char name[40]; // 0x10
+    GAME::GameString levelName; // 0x38
+    private: char pad_50[0xcc]; public:
     uint32_t playerLevel; // 0x11c
     uint32_t levelRange; // 0x120
     uint32_t difficulty; // 0x124

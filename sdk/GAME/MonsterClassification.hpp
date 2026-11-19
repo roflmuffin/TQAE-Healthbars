@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 namespace GAME {
 #pragma pack(push, 1)
 enum class MonsterClassification : uint32_t {

@@ -25,6 +25,21 @@ public:
     bool showHealthAmountTextForMonsters = false;
     bool showMinionHealthBars = false;
     bool showDebugText = false;
+    bool animatedDamageNumbersEnabled = true;
+    bool goldAutolootEnabled = true;
+    bool potionAutolootEnabled = true;
+    bool relicAutolootEnabled = true;
+    bool charmAutolootEnabled = true;
+    bool newItemGlowEnabled = true;
+    ImColor newItemGlowColor = ImColor(255, 204, 89, 191);
+    int newItemGlowSizePx = 3;
+    int autolootDelayMs = 750;
+    int autolootRange = 10;
+    bool hitFlashesEnabled = true;
+    int hitFlashDurationMs = 150;
+    bool redHoverRimEnabled = true;
+    int hoverRimWidth = 60;
+    int hoverRimOpacity = 100;
 
     ImVec2 size = ImVec2(55, 5);
     float trailingBarDelaySeconds = 0.50f;

@@ -6,6 +6,11 @@
 
 #include "d3d11_impl.h"
 #include "health_bar_config.h"
+#include "hit_flash.h"
+#include "damage_numbers.h"
+#include "gold_autoloot.h"
+#include "loot_notifications.h"
+#include "inventory_glow.h"
 #include <cassert>
 #include <cstring>
 #include <d3d11.h>
@@ -15,6 +20,7 @@
 #include "../sdk/GAME/Engine.hpp"
 #include "../sdk/GAME/GameCamera.hpp"
 #include "../sdk/GAME/GraphicsCanvas.hpp"
+#include "../sdk/GAME/GraphicsSceneRenderer.hpp"
 #include "../sdk/GAME/Rect.hpp"
 #include "../vendor/imgui/imgui.h"
 #include "../vendor/imgui/imgui_internal.h"
@@ -52,20 +58,18 @@ static void __fastcall hkApplyGamma(GraphicsCanvas* canvas, void* edx)
     RenderConfigWindow();
 }
 
-using GetViewport_t = const Viewport&(__thiscall*)(void* thisptr);
+using GetViewport_t = const Viewport&(__thiscall*)(const GraphicsSceneRenderer* scene);
 
 static GetViewport_t oGetViewport = nullptr;
 
-const Viewport& __fastcall hkGetViewport(void* thisptr, void* edx)
+const Viewport& __fastcall hkGetViewport(const GraphicsSceneRenderer* scene, void* edx)
 {
-    auto& result = oGetViewport(thisptr);
+    auto& result = oGetViewport(scene);
 
-    auto* viewport = reinterpret_cast<Viewport*>(reinterpret_cast<uintptr_t>(thisptr) + 0x88c);
-
-    if (viewport->w > 0 && viewport->h > 0)
+    if (result.w > 0 && result.h > 0)
     {
-        ormenos::state::g_pViewport.w = viewport->w;
-        ormenos::state::g_pViewport.h = viewport->h;
+        ormenos::state::g_pViewport.w = result.w;
+        ormenos::state::g_pViewport.h = result.h;
     }
 
     return result;
@@ -133,6 +137,7 @@ static void __fastcall hkSetDefaultState(GraphicsCanvas* canvas, void* edx)
     {
         if (imguiFrameReady && canvas != nullptr && !ormenos::state::allCharacters.empty())
             RenderHealthBarsBeforeUi();
+        ormenos::render_loot_notifications(canvas);
     }
 }
 
@@ -224,10 +229,14 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
         ormenos::state::gameBase = mem::rva<"Game.dll">(0);
 
         ormenos::state::g_pEngine = mem::modexportptr<Engine*, "Engine.dll", "?gEngine@GAME@@3PAVEngine@1@A">();
-        ormenos::state::g_pGameEngine = mem::modexportptr<Engine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
-        ormenos::state::g_pGameCamera = reinterpret_cast<GameCamera*>(((size_t)ormenos::state::g_pGameEngine) + 0x988);
+        ormenos::state::g_pGameEngine = mem::modexportptr<GameEngine*, "Game.dll", "?gGameEngine@GAME@@3PAVGameEngine@1@A">();
+        ormenos::state::g_pGameCamera = ormenos::state::g_pGameEngine ? &ormenos::state::g_pGameEngine->camera : nullptr;
         ormenos::state::g_pLocalizationManager = mem::modexportptr<void*, "Engine.dll", "?m_Instance@LocalizationManager@GAME@@1PAV12@A">();
         ormenos::state::g_pTimeScale = reinterpret_cast<float*>(mem::rva<"Engine.dll">(0x3700dc));
+        ormenos::initialize_hit_flashes(device, context);
+        ormenos::initialize_damage_numbers();
+        ormenos::initialize_gold_autoloot();
+        ormenos::initialize_inventory_glow();
 
         ormenos::state::fnWorldCameraProject =
             reinterpret_cast<ormenos::state::ProjectFunc>(mem::modexport<"Engine.dll", "?Project@WorldCamera@GAME@@QBE?AVVec2@2@"
@@ -238,9 +247,6 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 
         ormenos::state::fnLocalizationGetText = reinterpret_cast<ormenos::state::LocalizationGetTextFunc>(
             mem::modexport<"Engine.dll", "?Localize@LocalizationManager@GAME@@UAAPBGPBDZZ">());
-
-        ormenos::state::fnGetDialogManager = reinterpret_cast<ormenos::state::GetDialogManagerFunc>(
-            mem::modexport<"Game.dll", "?GetDialogManager@GameEngine@GAME@@QAEAAVDialogManager@2@XZ">());
 
         ormenos::state::fnRenderRectSolid = reinterpret_cast<ormenos::state::RenderRectSolid_t>(
             mem::modexport<"Engine.dll", "?RenderRect@GraphicsCanvas@GAME@@QAEXABVRect@2@ABVColor@2@PBVGraphicsShader2@2@ABVName@2@@Z">());
@@ -318,6 +324,7 @@ long __stdcall hkPresent11(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT F
 static void RenderConfigWindow()
 {
     frameCount++;
+    ormenos::expire_hit_flashes();
 
     ImGui_ImplDX11_NewFrame();
     ImGui_ImplWin32_NewFrame();

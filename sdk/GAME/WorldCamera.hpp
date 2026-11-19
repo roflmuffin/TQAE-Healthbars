@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "Camera.hpp"
 #include "Vec3.hpp"
 namespace GAME {

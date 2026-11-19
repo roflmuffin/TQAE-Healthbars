@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: configure (Win32)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}",
+        "-B",
+        "${workspaceFolder}/build",
+        "-A",
+        "Win32"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: configure compile_commands (x86)",
+      "type": "shell",
+      "command": "cmd.exe",
+      "args": [
+        "/d",
+        "/c",
+        "call \"C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Auxiliary\\Build\\vcvars32.bat\" && cmake -S \"${workspaceFolder}\" -B \"${workspaceFolder}\\build-compile-commands\" -G \"NMake Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "CMake: build Release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build", "--config", "Debug"],
+      "dependsOn": "CMake: configure (Win32)",
+      "problemMatcher": ["$msCompile"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Deploy dinput8.dll to Titan Quest",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "-E",
+        "copy_if_different",
+        "${workspaceFolder}/build/Debug/dinput8.dll",
+        "G:/SteamLibrary/steamapps/common/Titan Quest Anniversary Edition/dinput8.dll"
+      ],
+      "dependsOn": "CMake: build Release",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ]
+}

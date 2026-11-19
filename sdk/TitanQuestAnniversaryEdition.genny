@@ -1,3 +1,7 @@
+// Titan Quest AE, Win32: Game.dll 62da9db2, Engine.dll 62da9ca0, TQ.exe 62daa02a (PE timestamps).
+// Field offsets are bytes. Virtual method indices refer to the primary x86 vtable.
+#include <cstdint>
+type wchar_t 2 [[u16]]
 type int 4 [[i32]]
 type int32_t 4 [[i32]]
 type size_t 4 [[i32]]
@@ -12,9 +16,22 @@ type bool 1 [[u8]]
 
 namespace GAME {
 
+// VS2012 basic_string stores a heap pointer in the first word when capacity reaches the inline limit.
+struct GameString 0x18 {
+    char inlineBuffer[16] @ 0x0;
+    uint32_t size @ 0x10;
+    uint32_t capacity @ 0x14;
+}
+
+struct GameWideString 0x18 {
+    wchar_t inlineBuffer[8] @ 0x0;
+    uint32_t size @ 0x10;
+    uint32_t capacity @ 0x14;
+}
+
 struct World {
     bool debugEnabled @ 0x8;
-    char* fileName @ 0x10 [[utf8*]];
+    GameString fileName @ 0x10;
 }
 
 struct IntVec3 {
@@ -61,7 +78,7 @@ struct ABBox {
 struct Region {
     World* world @ 0x24;
     IntVec3 worldOffset @ 0x2c;
-    char* name @ 0x38 [[utf8*]];
+    GameString name @ 0x38;
 }
 
 struct WorldVec3 {
@@ -73,13 +90,22 @@ struct Coords {
     Vec3 right;
     Vec3 up;
     Vec3 forward;
+    Vec3 position;
 }
 
 struct WorldCoords {
     WorldVec3 location;
+    Vec3 right;
+    Vec3 up;
+    Vec3 forward;
 }
 
-struct WorldFrustum {}
+struct Frustum 0x404 {}
+
+struct WorldFrustum {
+    Region* region @ 0x0;
+    Frustum regionFrustum @ 0x4;
+}
 
 
 
@@ -97,16 +123,15 @@ struct PhysicsMesh {
 }
 
 struct Resource {
-    char* fileName @ 0xc [[utf8*]];
+    int meshId @ 0x8; // GraphicsMeshInstance::GetMeshID reads this word on its mesh.
+    GameString fileName @ 0xc;
     uint32_t lastFrameUsed @ 0x38;
     //PhysicsMesh* physicsMesh @ 0xf8;
 }
 
 struct GraphicsMesh : Resource {
-    int meshId @ 0x8;
-    Vec3 centerOfMass @ 0xC8;
+    ABBox boundingBox @ 0xc8;
     uint32_t numHitboxes @ 0xa0;
-    //ABBox* boundingBox @ 200;
     uint32_t numFaces @ 0x74;
     uint32_t numVertices @ 0x6c;
     uint32_t numBones @ 0xa8;
@@ -138,48 +163,84 @@ struct Plane {
     float w;
 }
 
-struct Name {}
+struct Name 0x10 {
+    uint32_t digest[4];
+}
+
+struct GraphicsSceneRenderer {}
+struct GraphicsCanvas {}
+struct RenderablePass {}
 
 struct GraphicsMeshInstance {
-    SkeletalPose* pose @ 0x128;
+    // Native const references use one pointer on x86.
+    virtual void RenderPass(RenderablePass* pass, Name* style, GraphicsCanvas* canvas, GraphicsSceneRenderer* scene) @ 10;
+    Coords objectToRegionCoords @ 0x1c;
+    SkeletalPose pose @ 0x128;
     GraphicsMesh* graphicsMesh @ 0x4;
-    Vec3* scale @ 0x140;
-    //ABBox* regionSpaceABBox @ 0x1a0;
+    Vec3 scale @ 0x140;
+    ABBox objectSpaceBoundingBox @ 0x14c;
+    ABBox regionSpaceABBox @ 0x1a0;
     float somethingX @ 0x16c;
     float somethingY @ 0x164;
 
     bool isDissolvingOne @ 0x228;
+    bool isUndissolvingOne @ 0x229;
+    float dissolveParam @ 0x230;
     bool isDissolvingTwo @ 0x250;
+    bool isUndissolvingTwo @ 0x251;
 
     Color diffuseColor @ 0x1c8;
     float highlight @ 0x1d8;
     Color color @ 0x1dc;
 }
 
-struct Object {
-    char* objectName @ 0x04 [[utf8*]];
+struct RTTI_ClassInfo 0x18 {
+    void* vtable @ 0x0;
+    char* name @ 0x4 [[utf8*]];
+    RTTI_ClassInfo* parent @ 0x8;
+}
+
+struct Object 0x24 {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    GameString objectName @ 0x4;
+    uint32_t objectNameHash @ 0x1c;
     uint32_t objectId @ 0x20;
-}
-
-struct GameString {
-    char inlineBuffer[16] @ 0x0;
-    uint32_t size @ 0x10;
-    uint32_t capacity @ 0x14;
-}
-
-struct Entity : Object {
-    GameString descriptionTag @ 0x258;
-    GraphicsMeshInstance* graphicsMeshInstance @ 0x184;
-    float height @ 0x1e4;
-    WorldCoords coords @ 0xa0;
-    int32_t lastFrameUpdated @ 0x140;
-    Color tintColor @ 0x274;
-    Color highlightColor @ 0x284;
-    bool highlightEnabled @ 0x294;
 }
 
 struct UniqueId {
     uint64_t id @ 0x0;
+}
+
+// Declare overrides before attaching the base. sdkgenny otherwise renames them and shifts generated slots.
+struct Entity {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    virtual bool IsInWorld() @ 9;
+    virtual void ApplyHighlightRecursive(Entity* root, Color* color, float intensity) @ 57;
+    virtual void UpdateSelf(int deltaMs) @ 58;
+}
+
+struct Entity : Object 0x168 {
+    UniqueId* uniqueid @ 0x6c;
+    Entity* parent @ 0x94;
+    WorldCoords coords @ 0xa0;
+    int32_t lastFrameUpdated @ 0x140;
+}
+
+struct Actor {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    virtual bool IsInWorld() @ 9;
+    virtual void ApplyHighlightRecursive(Entity* root, Color* color, float intensity) @ 57;
+    virtual void UpdateSelf(int deltaMs) @ 58;
+    virtual GameWideString GetGameDescription(bool arg1, bool arg2) @ 63;
+}
+
+struct Actor : Entity 0x2c4 {
+    GraphicsMeshInstance* graphicsMeshInstance @ 0x184;
+    float height @ 0x1e4;
+    GameString descriptionTag @ 0x258;
+    Color tintColor @ 0x274;
+    Color highlightColor @ 0x284;
+    bool highlightEnabled @ 0x294;
 }
 
 enum TeamMajor : uint32_t
@@ -206,10 +267,11 @@ enum TeamMinor : uint32_t
     TeamMinor_Violet   = 8,
 };
 
-struct Team {
+struct Team 0xc {
     TeamMajor major;
     TeamMinor minor;
     bool initialized;
+    bool IsFoe(Team* other);
 }
 
 struct CombatManager {
@@ -235,10 +297,28 @@ struct Inventory {
     void* vft;
 }
 
-struct Character : Entity {
-    char* record @ 0x4 [[utf8*]];
-    float currentLife @ 0x860;
-    float maxLife @ 0x8a4;
+enum class AttackStyle : uint32_t {
+    Direct = 0, Melee = 1, Projectile = 2, Retaliation = 3, PeriodicDebuff = 4,
+}
+
+struct ParametersCombat {
+    AttackStyle style @ 0x8;
+}
+
+struct Character {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    virtual bool IsInWorld() @ 9;
+    virtual void ApplyHighlightRecursive(Entity* root, Color* color, float intensity) @ 57;
+    virtual void UpdateSelf(int deltaMs) @ 58;
+    virtual GameWideString GetGameDescription(bool arg1, bool arg2) @ 63;
+    virtual LifeState GetLifeState() @ 82;
+    virtual bool IsAlive() @ 86;
+}
+
+struct Character : Actor 0x1f18 {
+    bool TakeAttack(ParametersCombat* parameters);
+    uint32_t GetControllerId();
+    uint32_t controllerId @ 0xc10;
     LifeState lifeState @ 0x1134
     char* type @ 0xc20 [[utf8*]];
     CharacterBio bio @ 0x844;
@@ -249,13 +329,12 @@ struct Character : Entity {
     bool fastcasting @ 0xd6c;
     bool observerCheatMode @ 0x113c;
     bool observerMode @ 0x113d;
-    uint32_t attackerId @ 0x38c;
     uint32_t level @ 0xc5c;
     uint32_t money @ 0xc14;
-    UniqueId* uniqueid @ 0x6c;
+    uint32_t altMoney @ 0xc18;
     Team team @ 0xD44;
 
-    char* portraitName @ 0x1e84 [[utf8*]];
+    GameString portraitName @ 0x1e84;
 
     CombatManager combatManager @ 0x2c8;
     SkillManager skillManager @ 0x568; 
@@ -273,14 +352,129 @@ struct PlayerGameInterface {
     void* vft;
 }
 
-struct Player : Character {
-    uint32_t currentLevel @ 0xc5c;
+struct Item {}
+
+struct Player {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    virtual bool IsInWorld() @ 9;
+    virtual void ApplyHighlightRecursive(Entity* root, Color* color, float intensity) @ 57;
+    virtual void UpdateSelf(int deltaMs) @ 58;
+    virtual GameWideString GetGameDescription(bool arg1, bool arg2) @ 63;
+    virtual LifeState GetLifeState() @ 82;
+    virtual bool IsAlive() @ 86;
+    virtual bool IsInventorySpaceAvailable(Item* item) @ 186;
+}
+
+struct Player : Character 0x21d0 {
     PlayerGameInterface* gameInterface @ 0x1f18;
-    uint32_t gold @ 0x40;
     GameString name @ 0x1f30;
 }
 
-struct Npc : Character {
+enum class ItemClassification : uint32_t {
+    Common = 0, Magical = 1, Rare = 2, Epic = 3, Legendary = 4, Broken = 5,
+    Potion = 6, OneShot = 7, Relic = 8, Quest = 9, Artifact = 10, ArtifactFormula = 11, Scroll = 12,
+}
+
+struct ItemReplicaInfo 0xbc {
+    uint32_t objectId @ 0x0;
+    GameString record @ 0x04;
+    GameString prefix @ 0x1c;
+    GameString suffix @ 0x34;
+    uint32_t seed @ 0x7c;
+    uint32_t goldValue @ 0x80; // OneShot_Gold::SetGoldValue
+    GameString secondRelicName @ 0x84;
+    bool locallyDropped @ 0xb8;
+}
+
+struct Item {
+    virtual RTTI_ClassInfo* GetRTTIClassInfo() @ 0;
+    virtual bool IsInWorld() @ 9;
+    virtual void ApplyHighlightRecursive(Entity* root, Color* color, float intensity) @ 57;
+    virtual void UpdateSelf(int deltaMs) @ 58;
+    virtual GameWideString GetGameDescription(bool arg1, bool arg2) @ 63;
+    virtual void UpdateReplicaInfo() @ 107;
+    virtual void GetItemReplicaInfo(ItemReplicaInfo* result) @ 108;
+    virtual ItemClassification GetItemClassification() @ 113;
+}
+
+struct Item : Actor 0x544 {
+    static Item* CreateItem(ItemReplicaInfo* replica);
+    bool IsPickupOk();
+    bool IsAllowedInContent();
+    bool HasBeenPickedUp();
+
+    void* equationInterfaceVtable @ 0x2c4;
+    ItemReplicaInfo replica @ 0x2c8;
+    ItemReplicaInfo secondaryReplica @ 0x384;
+    ItemClassification classification @ 0x454;
+    bool pickupOk @ 0x4d5;
+    bool hasBeenPickedUp @ 0x4d6;
+}
+
+struct ItemRelic : Item 0x840 {}
+struct ItemCharm : ItemRelic 0x840 {}
+struct OneShot : Item 0x5e4 {
+    uint32_t goldValue @ 0x5ac; // Used by OneShot_Gold.
+}
+struct OneShot_Gold : OneShot 0x6a4 {}
+struct OneShot_Potion : OneShot 0x5f0 {}
+struct OneShot_PotionHealth : OneShot_Potion 0x5f0 {}
+struct OneShot_PotionMana : OneShot_Potion 0x5f0 {}
+
+struct InventorySack {
+    float cellWidth @ 0x18;
+    float cellHeight @ 0x1c;
+    uint32_t gridWidth @ 0x20;
+    uint32_t gridHeight @ 0x24;
+    float scale @ 0x34;
+    bool ContainsItem(uint32_t itemId);
+}
+
+struct PlayerInventoryCtrl {
+    void* vtable @ 0x0;
+    Player* parent @ 0x4;
+    InventorySack** sacksBegin @ 0x14;
+    InventorySack** sacksEnd @ 0x18;
+    InventorySack** sacksCapacityEnd @ 0x1c;
+    bool AddItem(uint32_t itemId, bool allSacks, int sack);
+    uint32_t GetItemUnderPoint(Vec2 point, int sack);
+    uint32_t GetNumberOfSacks();
+    InventorySack* GetSack(int index);
+}
+
+struct ControllerCharacter 0x1e4 {
+    virtual void PickupItem(uint32_t itemId) @ 18;
+}
+
+struct ControllerPlayer : ControllerCharacter 0x3b4 {
+    PlayerInventoryCtrl inventoryCtrl @ 0x360;
+    PlayerInventoryCtrl* GetInventoryCtrl();
+}
+
+struct ObjectManager {
+    // Game.dll RVAs for the typed object lookups used by the pickup code.
+    ControllerCharacter* FindControllerCharacter(uint32_t id); // 0x17400
+    Item* FindItem(uint32_t id); // 0x17b40
+}
+
+struct ActorConfigCommand {
+    virtual void Execute() @ 1;
+    uint32_t parentId @ 0x4;
+    bool supportsNetwork @ 0x8;
+}
+
+struct CharPickUpConfigCmd : ActorConfigCommand {
+    uint32_t itemId @ 0xc;
+}
+
+struct PotionStack {
+    void* vtable @ 0x0;
+    uint32_t visiblePotionId @ 0x4;
+    uint32_t stackedPotionCount @ 0xc;
+    void PushStack(uint32_t potionId);
+}
+
+struct Npc : Character 0x2378 {
 
 }
 
@@ -293,16 +487,15 @@ enum class MonsterClassification : uint32_t {
    Quest = 4,
 }
 
-struct Monster : Character {
+struct Monster : Character 0x23fc {
     MonsterClassification classification @ 0x1FB8;
     bool givesXp @ 0x2294;
-    uint32_t baseExperience @ 0xC60;
     bool showStatusWidget @ 0x2229;
 }
 
 struct GameInfo {
-    char* name @ 0x10 [[utf8*]];
-    char* levelName @ 0x38 [[utf8*]];
+    char name[40] @ 0x10 [[utf8*]];
+    GameString levelName @ 0x38;
     uint32_t difficulty @ 0x124;
     int32_t elapsedGameTime @ 0x14c;
     int32_t gameSpeed @ 0x144;
@@ -318,7 +511,6 @@ struct Mat4 {
 struct Camera {
     void* vft;
     Coords coords;
-    Vec3 position;
     float nearPlane @ 0x40;
     float farPlane @ 0x44;
 }
@@ -348,12 +540,69 @@ struct GameCamera : WorldCamera {
     WorldVec3 target @ 0x10c;
 }
 
-struct RenderDevice {}
+struct GraphicsRenderable {}
 
-struct RenderDevice {}
-struct RenderSurface {}
+struct GraphicsSceneRenderer {
+    void AddRenderable(GraphicsRenderable* renderable, Region* region, bool highlighted);
+    virtual Camera* GetCamera() @ 1;
+    virtual Viewport* GetViewport() @ 2;
+    virtual Mat4* GetWorldToScreenMatrix() @ 3;
+    Camera camera @ 0x28;
+    Frustum frustum @ 0x78;
+    Viewport viewport @ 0x88c;
+    Mat4 worldToScreenMatrix @ 0x8cc;
+}
+
+struct RenderDevice {
+    virtual Viewport* GetViewport() @ 25;
+}
+
+struct RenderSurface {
+    void* vtable @ 0x0;
+}
 struct GraphicsShader2 {}
 struct GraphicsTexture {}
+struct GraphicsFont {}
+
+// Fields consumed by the styled RenderText overload.
+struct FontStyle {
+    GraphicsFont* font @ 0x0;
+    Color color @ 0x1c;
+    int height @ 0x2c;
+    int renderStyle @ 0x34;
+    bool shadow @ 0x38;
+    int shadowOffset @ 0x3c;
+    bool outline @ 0x44;
+}
+
+struct StyleManager {
+    FontStyle* GetStyle(GameString* name);
+}
+
+// TQ.exe floating-text list traversed at RVA 0x41570.
+struct FloatingTextNode {
+    FloatingTextNode* next @ 0x0;
+    GameWideString text @ 0x08;
+    GameString style @ 0x20;
+    Vec3 offset @ 0x3c;
+    float fontHeightScale @ 0x48;
+    int lifetimeMs @ 0x58;
+    int remainingMs @ 0x5c;
+    Vec3 translation @ 0x60;
+    WorldVec3 location @ 0x6c;
+}
+
+// TQ.exe inventory icon drawn at RVA 0x10ade0.
+struct InventoryIcon {
+    Rect rect @ 0x10;
+    uint32_t itemId @ 0x30;
+    uint32_t ownerId @ 0x34;
+    uint32_t playerOwned @ 0x38;
+    GraphicsTexture* texture @ 0x3c;
+    Vec2 lastDrawOrigin @ 0x48;
+    float scale @ 0x78;
+}
+
 struct RenderTexture {}
 struct RenderDynamicVertexBuffer {}
 struct RenderDynamicIndexBuffer {}
@@ -369,6 +618,12 @@ struct GraphicsCanvasTempSurfaceEntry {
 
 struct GraphicsCanvas {
     void* vtable @ 0x0;
+    Viewport* GetViewport();
+    void SetDefaultState();
+    void SetDepth(float value);
+    void SetDepthTestFunction(int testFunction);
+    void SetDepthWriteMode(int mode);
+    void ApplyGamma();
 
     GraphicsShader2* colorGradingFilterShader @ 0x4;
     GraphicsShader2* ambientOcclusionShader @ 0x8;
@@ -460,7 +715,7 @@ struct Engine {
     GameInfo gameInfo @ 0x298;
     int updateTime @ 0x228;
     uint32_t frameCount @ 0x3f0;
-    WorldFrustum worldFrustum @ 0x404;
+    WorldFrustum priorFrameFrustum @ 0x4a4;
     float uiScale @ 0x940;
 
     bool characterCommandLogEnabled @ 0x1b8;
@@ -485,7 +740,28 @@ struct GameUiInterface {
     int32_t somethingAboutSkills @ 0x1C55;
 }
 
+struct LoadTable {
+    virtual char* GetValue(char* key, char* fallback) @ 6;
+}
+
+enum class GameTextClass : int32_t {
+    ItemFallback = 2,
+}
+
+struct ItemTextClassNode {
+    GameTextClass textClass @ 0x3c;
+}
+
+struct TextStyleNode {
+    GameString style @ 0xc;
+}
+
 struct GameEngine {
+    Player* GetMainPlayer();
+    GameTextClass GetItemTextClass(ItemClassification classification);
+    GameString GetGameTextStyleName(GameTextClass textClass);
+    LoadTable* GetDatabase();
+    void CreateItemCopy(WorldCoords* coords, uint32_t itemId, bool local);
     void* vtable0;
     void* vtable1;
     DialogManager dialogManager @ 0x58;
@@ -493,7 +769,10 @@ struct GameEngine {
     float meleeRange @ 0x950;
     float meleeTargetDistance @ 0x980;
     float maximumRange @ 0x960;
+    GameCamera camera @ 0x988;
     GameUiInterface* gameUiInterface @ 0xfc8;
+    ItemTextClassNode* itemTextClassMapHead @ 0x108c;
+    TextStyleNode* textStyleMapHead @ 0x27d4;
     bool renderingDisabled @ 0x28E8;
     bool debugRendering @ 0x2a8f;
     bool debugRendering2 @ 0x2a8e;

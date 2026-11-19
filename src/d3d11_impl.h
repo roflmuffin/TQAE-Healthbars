@@ -6,7 +6,7 @@
 
 #include "../vendor/imgui/imgui.h"
 #include "../sdk/GAME/Engine.hpp"
-#include "../sdk/GAME/GameCamera.hpp"
+#include "../sdk/GAME/GameEngine.hpp"
 #include "../sdk/GAME/Vec2.hpp"
 #include "../sdk/GAME/Viewport.hpp"
 #include "../sdk/GAME/GraphicsCanvas.hpp"
@@ -31,7 +31,7 @@ inline uintptr_t engineBase = 0;
 inline float globalScaleFactor = 1.0f;
 
 inline Engine* g_pEngine;
-inline Engine* g_pGameEngine;
+inline GameEngine* g_pGameEngine;
 inline GameCamera* g_pGameCamera;
 inline void* g_pLocalizationManager;
 inline float* g_pTimeScale = nullptr;
@@ -43,7 +43,6 @@ inline void* lastCreatedWidget = nullptr;
 using ProjectFunc = void(__thiscall*)(WorldCamera* pThis, Vec2* result, WorldVec3* worldPos, Viewport* viewport);
 using GetObjectManager = void* (*)();
 using LocalizationGetTextFunc = const wchar_t*(__cdecl*)(void* pThis, const char* key);
-using GetDialogManagerFunc = void*(__thiscall*)(void* pThis);
 using WidgetOnCreateFunc = void*(__thiscall*)(void* pThis);
 using RenderRectSolid_t =
     void(__thiscall*)(GraphicsCanvas* this_, const GAME::Rect& rect, const Color& color, const void* shader, const Name& name);
@@ -68,7 +67,6 @@ using SetDepthWriteMode_t = void(__thiscall*)(GraphicsCanvas* this_, int writeMo
 inline ProjectFunc fnWorldCameraProject = nullptr;
 inline GetObjectManager fnGetObjectManager = nullptr;
 inline LocalizationGetTextFunc fnLocalizationGetText = nullptr;
-inline GetDialogManagerFunc fnGetDialogManager = nullptr;
 inline WidgetOnCreateFunc fnWidgetOnCreate = nullptr;
 inline RenderRectSolid_t fnRenderRectSolid = nullptr;
 inline RenderText_t fnRenderText = nullptr;
